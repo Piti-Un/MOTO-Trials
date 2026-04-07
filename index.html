@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Moto Trials</title>
+  <meta name="description" content="A mobile physics motorcycle game with 4 challenging tracks." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="orientationWarning">
+    <div style="font-size: 40px; margin-bottom: 10px;">📱 ↻</div>
+    <div>Please rotate your phone<br>to landscape mode to play.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LEVEL SELECT SCREEN
+  ══════════════════════════════════════ -->
+  <div id="levelSelect">
+
+    <!-- Hero motorcycle image -->
+    <img class="ls-hero" src="hero.png" alt="Moto Trials rider" />
+
+    <!-- Logo top-left -->
+    <div class="ls-logo-wrap">
+      <span class="ls-logo-main">MOTO<br>Trials</span>
+      <span class="ls-logo-sub">by Antigravity Games</span>
+    </div>
+
+    <!-- Stars badge top-right -->
+    <div class="ls-star-badge" id="homeStarBadge">⭐ 0</div>
+
+    <!-- Bottom action buttons -->
+    <div class="ls-actions">
+      <div class="ls-btn-row">
+        <button class="ls-game-btn" id="playBtn" onclick="openTrackSheet()">
+          <div class="ls-btn-icon"><span class="bike-icon">🏍️</span></div>
+          <div class="ls-btn-play-arrow"></div>
+          <span class="ls-btn-label">PLAY</span>
+        </button>
+      </div>
+      <div class="ls-btn-row">
+        <button class="ls-game-btn" onclick="openGarage()">
+          <div class="ls-btn-icon"><span class="bike-icon">🎨</span></div>
+          <div class="ls-btn-play-arrow" style="border-left-color:#9933cc;"></div>
+          <span class="ls-btn-label">Skins</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Level select overlay (opens when tapping 🏁) -->
+  <div id="trackSheet" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(10,20,40,0.95);flex-direction:column;align-items:center;padding:24px 16px;overflow-y:auto;">
+    <button onclick="closeTrackSheet()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">✕</button>
+    <div style="font-size:26px;font-weight:900;color:#ffd700;text-shadow:0 2px 8px rgba(0,0,0,0.5);margin-bottom:20px;font-family:'Arial Black',Impact,sans-serif;">🏁 Choose Track</div>
+    <div class="ls-grid" id="levelGrid"></div>
+    <div style="margin-top:12px;">
+      <button class="ls-reset" onclick="LevelManager.resetAll();buildLevelGrid();updateHomeStars();">↺ Reset Progress</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       GARAGE (SKIN SELECTION) SCREEN
+  ══════════════════════════════════════ -->
+  <div id="garageScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; width:100vw; height:100vh; background:#0f172a;">
+    <h2 style="color:white; font-size:32px; margin-bottom:20px; text-shadow:0 4px 10px rgba(0,0,0,0.5);">Skin Customization</h2>
+    
+    <div style="display:flex; align-items:center; gap:20px;">
+      <button onclick="prevSkin()" style="font-size:30px; background:none; border:none; color:white; padding:10px;">◀</button>
+      
+      <div style="background:#1e293b; border:4px solid rgba(255,255,255,0.1); border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); width: 350px;">
+        <h3 id="skinName" style="color:white; margin:0 0 10px 0; font-size:24px;">Classic Blaze</h3>
+        <canvas id="skinCanvas" width="300" height="200" style="background:#0f172a; border-radius:8px;"></canvas>
+        <p id="skinReq" style="color:#94a3b8; font-size:14px; margin-top:15px; font-weight:bold; height:20px;">Unlocked</p>
+      </div>
+      
+      <button onclick="nextSkin()" style="font-size:30px; background:none; border:none; color:white; padding:10px;">▶</button>
+    </div>
+
+    <div style="display:flex; gap:20px; margin-top:30px;">
+      <button onclick="closeGarage()" style="background:#334155; color:white; border:none; padding:12px 30px; font-size:18px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.3);">Cancel</button>
+      <button id="equipSkinBtn" onclick="equipSkin()" style="background:#3b82f6; color:white; border:none; padding:12px 40px; font-size:18px; font-weight:bold; border-radius:8px; box-shadow:0 4px 15px rgba(59,130,246,0.4);">EQUIP</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       GAME SCREEN
+  ══════════════════════════════════════ -->
+  <div id="gameScreen" style="display:none;">
+    <div id="wrap">
+      <canvas id="gameCanvas" width="780" height="460"></canvas>
+
+      <!-- HUD: distance & pause -->
+      <div id="hud">
+        <div class="hud-pill" id="distLabel">0 m</div>
+        <div id="pauseBtn" onclick="togglePause()">
+          <div class="pause-icon">
+            <div class="pause-bar"></div>
+            <div class="pause-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stat bar: speed & stars -->
+      <div id="statBar">
+        <div class="stat-chip" id="speedLabel">Speed: 0</div>
+        <div class="stat-chip" id="starLabel">⭐ 0</div>
+      </div>
+
+      <!-- Touch controls -->
+      <div id="controls" style="display:none;">
+        <div class="ctrl-zone" id="brakeZone">
+          <div class="ctrl-btn"><span class="ctrl-label">◀</span></div>
+        </div>
+        <div class="ctrl-zone" id="gasZone">
+          <div class="ctrl-btn"><span class="ctrl-label">▶</span></div>
+        </div>
+      </div>
+
+      <!-- Game-over / win overlay -->
+      <div id="overlay" style="display:none;">
+        <div class="ov-emoji" id="ovEmoji"></div>
+        <div class="ov-title" id="ovTitle"></div>
+        <div class="ov-stars" id="ovStars"></div>
+        <div class="ov-sub" id="ovSub"></div>
+        <div class="ov-btns">
+          <button class="ov-btn secondary" onclick="showLevelSelect()">☰ Menu</button>
+          <button class="ov-btn primary" onclick="startGame()">↺ Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts — order matters -->
+  <script src="levels.js"></script>
+  <script src="level-manager.js"></script>
+  <script src="game.js"></script>
+
+</body>
+
+</html>
