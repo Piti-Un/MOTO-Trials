@@ -120,6 +120,25 @@ function togglePause() {
 }
 
 // =============================================================
+//  Landing Page → Game transition
+// =============================================================
+
+/** Called by the landing page PLAY NOW button — fades out landing and shows level select */
+function enterGame() {
+  const lp = document.getElementById('landingPage');
+  const ls = document.getElementById('levelSelect');
+  if (!lp) return;
+
+  lp.classList.add('lp-exit');                  // fade-out via CSS transition (0.6s)
+  setTimeout(() => {
+    lp.style.display = 'none';
+    ls.style.display = 'flex';
+    buildLevelGrid();
+    updateHomeStars();
+  }, 600);
+}
+
+// =============================================================
 //  Level select UI
 // =============================================================
 

@@ -4,8 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Moto Trials</title>
-  <meta name="description" content="A mobile physics motorcycle game with 4 challenging tracks." />
+  <title>Moto Trials — Physics Motorcycle Game</title>
+  <meta name="description" content="MOTO Trials: A mobile physics motorcycle game with 10 challenging tracks, 10 bike skins, and procedural audio. Built by Antigravity Games." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -16,9 +18,355 @@
   </div>
 
   <!-- ══════════════════════════════════════
+       LANDING PAGE
+  ══════════════════════════════════════ -->
+  <div id="landingPage">
+
+    <!-- Animated Background Particles -->
+    <div class="lp-particles" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Top bar -->
+    <div class="lp-topbar">
+      <div class="lp-brand">🏍️ Antigravity Games</div>
+      <button class="lp-skip-btn" onclick="enterGame()">Skip intro ›</button>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="lp-hero">
+      <div class="lp-hero-content">
+        <div class="lp-eyebrow">Physics Motorcycle Game</div>
+        <h1 class="lp-logo">MOTO<br><span>Trials</span></h1>
+        <p class="lp-tagline">10 tracks. 10 skins. Pure adrenaline.<br>Can you handle the Insane Peak?</p>
+
+        <div class="lp-stats">
+          <div class="lp-stat">
+            <div class="lp-stat-num">10</div>
+            <div class="lp-stat-label">Levels</div>
+          </div>
+          <div class="lp-stat-div"></div>
+          <div class="lp-stat">
+            <div class="lp-stat-num">10</div>
+            <div class="lp-stat-label">Bike Skins</div>
+          </div>
+          <div class="lp-stat-div"></div>
+          <div class="lp-stat">
+            <div class="lp-stat-num">4</div>
+            <div class="lp-stat-label">Difficulty Tiers</div>
+          </div>
+          <div class="lp-stat-div"></div>
+          <div class="lp-stat">
+            <div class="lp-stat-num">∞</div>
+            <div class="lp-stat-label">Replays</div>
+          </div>
+        </div>
+
+        <button class="lp-play-btn" id="landingPlayBtn" onclick="enterGame()">
+          <span class="lp-play-icon">▶</span>
+          <span>PLAY NOW</span>
+        </button>
+        <p class="lp-free-note">Free to play · No downloads · Works on mobile</p>
+      </div>
+
+      <!-- Floating bike image -->
+      <div class="lp-hero-visual">
+        <img src="hero.png" alt="MOTO Trials motorcycle" class="lp-hero-bike" />
+        <div class="lp-glow-ring"></div>
+      </div>
+    </div>
+
+    <!-- Feature Cards -->
+    <div class="lp-features">
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🏔️</div>
+        <div class="lp-feat-title">Epic Terrain</div>
+        <div class="lp-feat-body">From gentle Desert Flats to terrifying Jungle Abyss — each track is hand-crafted with hills, ramps, and drops.</div>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">⚙️</div>
+        <div class="lp-feat-title">Real Physics</div>
+        <div class="lp-feat-body">Moon gravity, progressive throttle, natural ramp launches, and a 2-wheel collision system that feels truly alive.</div>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🎨</div>
+        <div class="lp-feat-title">Skin Garage</div>
+        <div class="lp-feat-body">Unlock 10 unique bike skins — from Neon Stealth to BMW S1000RR — by collecting stars across all levels.</div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: Game Name ── -->
+    <div class="lp-section lp-section-name">
+      <div class="lp-section-inner">
+        <div class="lp-section-label">The Game</div>
+        <div class="lp-name-layout">
+          <div class="lp-name-left">
+            <div class="lp-big-logo">MOTO<br><span>Trials</span></div>
+            <div class="lp-name-sub">by Antigravity Games · 2026</div>
+          </div>
+          <div class="lp-name-right">
+            <div class="lp-name-desc">
+              MOTO Trials is a <strong>mobile-first physics motorcycle game</strong> where you ride through 10 increasingly brutal tracks, collect checkpoint flags to earn stars, and unlock new levels and premium bike skins along the way.
+            </div>
+            <div class="lp-name-tags">
+              <span class="lp-tag">🏍️ Racing</span>
+              <span class="lp-tag">⚙️ Physics</span>
+              <span class="lp-tag">📱 Mobile</span>
+              <span class="lp-tag">🏆 Progression</span>
+              <span class="lp-tag">🎨 Customization</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: How It Works ── -->
+    <div class="lp-section lp-section-how">
+      <div class="lp-section-inner">
+        <div class="lp-section-label">How It Works</div>
+        <h2 class="lp-section-h2">Simple Controls. Deep Challenge.</h2>
+        <div class="lp-how-grid">
+          <div class="lp-how-card">
+            <div class="lp-how-num">01</div>
+            <div class="lp-how-icon">▶</div>
+            <div class="lp-how-title">Gas (Right)</div>
+            <div class="lp-how-body">Hold the right button or press → to accelerate. The throttle builds progressively — slow start, fast finish.</div>
+          </div>
+          <div class="lp-how-card">
+            <div class="lp-how-num">02</div>
+            <div class="lp-how-icon">◀</div>
+            <div class="lp-how-title">Brake (Left)</div>
+            <div class="lp-how-body">Hold the left button or press ← to brake, lean back mid-air, or slow down on steep descents.</div>
+          </div>
+          <div class="lp-how-card">
+            <div class="lp-how-num">03</div>
+            <div class="lp-how-icon">🏁</div>
+            <div class="lp-how-title">Collect Flags</div>
+            <div class="lp-how-body">Three checkered flags sit at 33%, 66%, and 100% of each track. Each one earns you a ⭐ star.</div>
+          </div>
+          <div class="lp-how-card">
+            <div class="lp-how-num">04</div>
+            <div class="lp-how-icon">💥</div>
+            <div class="lp-how-title">Don't Crash!</div>
+            <div class="lp-how-body">If your rider's head touches the ground, it's Game Over. You'll have a short crash countdown before losing.</div>
+          </div>
+          <div class="lp-how-card">
+            <div class="lp-how-num">05</div>
+            <div class="lp-how-icon">🔓</div>
+            <div class="lp-how-title">Unlock Levels</div>
+            <div class="lp-how-body">Earning your first star on any level automatically unlocks the next one in the sequence.</div>
+          </div>
+          <div class="lp-how-card">
+            <div class="lp-how-num">06</div>
+            <div class="lp-how-icon">🎨</div>
+            <div class="lp-how-title">Unlock Skins</div>
+            <div class="lp-how-body">Total stars across all levels unlock premium bike skins in the Garage — from Neon to BMW S1000RR.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: Game Process ── -->
+    <div class="lp-section lp-section-process">
+      <div class="lp-section-inner">
+        <div class="lp-section-label">Game Process</div>
+        <h2 class="lp-section-h2">Your Journey from Start to Victory</h2>
+        <div class="lp-process-flow">
+          <div class="lp-proc">
+            <div class="lp-proc-bubble" style="--c:#00dcff">🏠</div>
+            <div class="lp-proc-line" style="--c:#00dcff"></div>
+            <div class="lp-proc-text">
+              <strong>Land Here</strong>
+              <span>See the game, get hyped, hit PLAY NOW</span>
+            </div>
+          </div>
+          <div class="lp-proc">
+            <div class="lp-proc-bubble" style="--c:#ff5a1f">🗺️</div>
+            <div class="lp-proc-line" style="--c:#ff5a1f"></div>
+            <div class="lp-proc-text">
+              <strong>Choose Track</strong>
+              <span>Pick from unlocked levels — start with Desert Flats</span>
+            </div>
+          </div>
+          <div class="lp-proc">
+            <div class="lp-proc-bubble" style="--c:#ffd700">🏍️</div>
+            <div class="lp-proc-line" style="--c:#ffd700"></div>
+            <div class="lp-proc-text">
+              <strong>Ride!</strong>
+              <span>Navigate terrain using Gas ▶ and Brake ◀</span>
+            </div>
+          </div>
+          <div class="lp-proc">
+            <div class="lp-proc-bubble" style="--c:#4ade80">🏁</div>
+            <div class="lp-proc-line" style="--c:#4ade80"></div>
+            <div class="lp-proc-text">
+              <strong>Hit Flags</strong>
+              <span>33% → 66% → 100% — each gives 1 star</span>
+            </div>
+          </div>
+          <div class="lp-proc">
+            <div class="lp-proc-bubble" style="--c:#a855f7">🏆</div>
+            <div class="lp-proc-line" style="--c:#a855f7; opacity:0"></div>
+            <div class="lp-proc-text">
+              <strong>Win & Progress</strong>
+              <span>Stars unlock next level + garage skins</span>
+            </div>
+          </div>
+        </div>
+        <div class="lp-flag-row">
+          <div class="lp-flag-box"><div class="lp-flag-pct">33%</div><div class="lp-flag-star">⭐</div><div class="lp-flag-lbl">Flag 1 · Unlocks next level</div></div>
+          <div class="lp-flag-box"><div class="lp-flag-pct">66%</div><div class="lp-flag-star">⭐⭐</div><div class="lp-flag-lbl">Flag 2 · Saved to progress</div></div>
+          <div class="lp-flag-box lp-flag-finish"><div class="lp-flag-pct">100%</div><div class="lp-flag-star">⭐⭐⭐</div><div class="lp-flag-lbl">Flag 3 · Level Complete!</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: The Character ── -->
+    <div class="lp-section lp-section-char">
+      <div class="lp-section-inner">
+        <div class="lp-section-label">The Character</div>
+        <h2 class="lp-section-h2">Meet Your Rider</h2>
+        <div class="lp-char-layout">
+          <div class="lp-char-visual">
+            <img src="hero.png" alt="MOTO Trials Rider" class="lp-char-img" />
+          </div>
+          <div class="lp-char-details">
+            <div class="lp-char-row">
+              <div class="lp-char-item">
+                <div class="lp-char-icon">🧢</div>
+                <div>
+                  <div class="lp-char-label">Helmet</div>
+                  <div class="lp-char-val">Orange shell, blue tinted visor, green goggle strap, sun peak</div>
+                </div>
+              </div>
+              <div class="lp-char-item">
+                <div class="lp-char-icon">🧥</div>
+                <div>
+                  <div class="lp-char-label">Suit</div>
+                  <div class="lp-char-val">Orange motocross jacket & pants with grey accent stripes</div>
+                </div>
+              </div>
+              <div class="lp-char-item">
+                <div class="lp-char-icon">🦺</div>
+                <div>
+                  <div class="lp-char-label">Protection</div>
+                  <div class="lp-char-val">Bright green knee pads, gloves & boots</div>
+                </div>
+              </div>
+              <div class="lp-char-item">
+                <div class="lp-char-icon">🏍️</div>
+                <div>
+                  <div class="lp-char-label">Bike (Default)</div>
+                  <div class="lp-char-val">Red dirt bike — Classic Blaze skin with knobbly tires & exhaust</div>
+                </div>
+              </div>
+              <div class="lp-char-item">
+                <div class="lp-char-icon">💀</div>
+                <div>
+                  <div class="lp-char-label">Crash State</div>
+                  <div class="lp-char-val">Rider tilts 85° — head hitting terrain triggers a 80-frame crash countdown → Game Over</div>
+                </div>
+              </div>
+              <div class="lp-char-item">
+                <div class="lp-char-icon">🎨</div>
+                <div>
+                  <div class="lp-char-label">Skins</div>
+                  <div class="lp-char-val">10 bike skins: Vintage · Cruiser · Pixel · Neon · Scrap · Gold · Bimota · BMW · Arctic</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: Technology ── -->
+    <div class="lp-section lp-section-tech">
+      <div class="lp-section-inner">
+        <div class="lp-section-label">Technology</div>
+        <h2 class="lp-section-h2">Built 100% From Scratch</h2>
+        <div class="lp-tech-grid">
+          <div class="lp-tech-card" style="--accent:#e34f26">
+            <div class="lp-tech-icon">📄</div>
+            <div class="lp-tech-name">HTML5</div>
+            <div class="lp-tech-desc">All game screens — landing page, home, garage, game canvas, HUD, and overlays</div>
+            <div class="lp-tech-role">Structure</div>
+          </div>
+          <div class="lp-tech-card" style="--accent:#f7df1e">
+            <div class="lp-tech-icon">⚡</div>
+            <div class="lp-tech-name">JavaScript</div>
+            <div class="lp-tech-desc">Full physics engine, input handling, camera system, particle effects, level builder — zero libraries</div>
+            <div class="lp-tech-role">Logic</div>
+          </div>
+          <div class="lp-tech-card" style="--accent:#1572b6">
+            <div class="lp-tech-icon">🎨</div>
+            <div class="lp-tech-name">Canvas 2D API</div>
+            <div class="lp-tech-desc">Renders bike, terrain, rider, flags, particles, backgrounds at 60fps via requestAnimationFrame</div>
+            <div class="lp-tech-role">Rendering</div>
+          </div>
+          <div class="lp-tech-card" style="--accent:#cc6699">
+            <div class="lp-tech-icon">💅</div>
+            <div class="lp-tech-name">Vanilla CSS</div>
+            <div class="lp-tech-desc">Glassmorphism UI, keyframe animations, gradient theming, responsive mobile layout</div>
+            <div class="lp-tech-role">Styling</div>
+          </div>
+          <div class="lp-tech-card" style="--accent:#00dcff">
+            <div class="lp-tech-icon">🔊</div>
+            <div class="lp-tech-name">Web Audio API</div>
+            <div class="lp-tech-desc">Procedural engine hum, crash burst, star chime, background music — no audio files at all</div>
+            <div class="lp-tech-role">Audio</div>
+          </div>
+          <div class="lp-tech-card" style="--accent:#4ade80">
+            <div class="lp-tech-icon">💾</div>
+            <div class="lp-tech-name">localStorage</div>
+            <div class="lp-tech-desc">Saves star progress, level unlocks, and equipped bike skin persistently across sessions</div>
+            <div class="lp-tech-role">Data</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: AI Used ── -->
+    <div class="lp-section lp-section-ai">
+      <div class="lp-section-inner lp-ai-inner">
+        <div class="lp-section-label">AI Used</div>
+        <div class="lp-ai-logo">Antigravity</div>
+        <div class="lp-ai-by">Advanced Agentic AI · Google DeepMind</div>
+        <p class="lp-ai-desc">This entire game — every line of physics, every level, all visuals, UI, audio, and gameplay mechanics — was designed, coded, and fine-tuned through multiple AI-assisted sessions. No manual programming required.</p>
+        <div class="lp-ai-chips">
+          <div class="lp-ai-chip" style="--c:#00dcff">Game Physics Design</div>
+          <div class="lp-ai-chip" style="--c:#ff5a1f">Level Terrain Generation</div>
+          <div class="lp-ai-chip" style="--c:#ffd700">Bike Skin Artwork</div>
+          <div class="lp-ai-chip" style="--c:#a855f7">UI & Visual Design</div>
+          <div class="lp-ai-chip" style="--c:#4ade80">Procedural Audio</div>
+          <div class="lp-ai-chip" style="--c:#f472b6">Bug Fixes & Polish</div>
+          <div class="lp-ai-chip" style="--c:#60a5fa">Level Unlock Logic</div>
+          <div class="lp-ai-chip" style="--c:#fb923c">Garage & Skin System</div>
+          <div class="lp-ai-chip" style="--c:#e2e8f0">Landing Page</div>
+        </div>
+        <button class="lp-play-btn lp-play-btn-sm" onclick="enterGame()" style="margin-top:40px">
+          <span class="lp-play-icon">▶</span>
+          <span>PLAY NOW</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="lp-footer">
+      <span>© 2026 Antigravity Games</span>
+      <span>·</span>
+      <span>Built with Antigravity AI by Google DeepMind</span>
+      <span>·</span>
+      <span>MOTO Trials v1.0</span>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
        LEVEL SELECT SCREEN
   ══════════════════════════════════════ -->
-  <div id="levelSelect">
+  <div id="levelSelect" style="display:none;">
 
     <!-- Hero motorcycle image -->
     <img class="ls-hero" src="hero.png" alt="Moto Trials rider" />

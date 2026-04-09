@@ -1,0 +1,79 @@
+Now I have everything I need to give you a full breakdown. Here's a complete overview of your game:
+
+🏍️ Game Overview: MOTO Trials
+"by Antigravity Games"
+
+🎮 Game Name
+MOTO Trials — a mobile-first physics motorcycle game.
+
+💻 Technology Used
+Layer	Technology
+Structure	HTML5
+Rendering	HTML5 Canvas API (2D context)
+Logic	Vanilla JavaScript (no frameworks)
+Styling	Vanilla CSS with animations & glassmorphism
+Audio	Web Audio API — procedurally generated engine noise, SFX, and background music. No audio files needed
+Data Storage	localStorage — saves your stars and unlocks
+🤖 AI Used
+Antigravity (Google DeepMind) — the AI assistant that built and iteratively refined the entire game across multiple sessions (physics tuning, level design, UI, audio, skins, level unlocking, bug fixes, etc.).
+
+🕹️ How the Game Works
+Home Screen → Choose Track → Play → Collect 3 Flags → Win or Crash → Repeat
+Flow:
+
+Home Screen — shows the "MOTO Trials" logo, PLAY button, Skins button, and your total ⭐ count
+Track Sheet — opens an overlay with all 10 levels in a 2-column grid. Locked levels show 🔒
+Game — you ride a motorcycle through a procedurally shaped terrain
+3 Checkpoint Flags sit at 33%, 66%, and 100% of the track. Each flag collected = 1 ⭐
+Reach the 3rd flag = Level Complete 🏆. Your rider's head hits the ground = GAME OVER 💥
+Stars unlock the next level immediately (even mid-run)
+Garage — spend collected stars to unlock new bike skins
+🗺️ The 10 Levels
+#	Name	Theme	Difficulty
+1	🏜️ Desert Flats	Desert	Easy
+2	⛰️ Rocky Ridge	Desert	Medium
+3	🏔️ Canyon Drop	Desert	Hard
+4	💀 Insane Peak	Desert	Insane
+5	🏛️ Angkor Dawn	Angkor Wat Sunset	Medium
+6	🌿 Jungle Canopy	Dark Jungle	Hard
+7	🏙️ City Circuit	City Dusk	Hard
+8	🗿 Temple Gauntlet	Stone Ruins	Hard
+9	🌃 Night Rider	Neon Night City	Insane
+10	🕳️ Jungle Abyss	Dark Jungle	Insane
+Each level has a unique hand-crafted terrain built with a Builder class using hills, valleys, ramps, arcs, and sine waves.
+
+🏍️ The Character / Bike
+The Rider:
+
+Wears an orange motocross suit with green knee pads, gloves, and boots
+Blue tinted visor/goggles, orange helmet with sun peak
+Animated body bob while riding
+The Bike (Default — Classic Blaze):
+
+Red Moto-X dirt bike with knobbly tires, swingarm, exhaust, handlebars
+Full physics: gravity, friction, wheel torque, angular velocity, ground collision
+Physics highlights:
+
+🌙 "Moon gravity" — floaty and dramatic jumps
+Progressive throttle (slow start → builds up)
+Natural ramp launch (flies off steep drops at speed)
+Mid-air auto-stabilizer
+Crash = rider head touching terrain → 80-frame countdown → Game Over
+🎨 Bike Skins (10 total)
+Skin	Unlock
+Classic Blaze	Free
+Neon Stealth	3 ⭐
+Scrap Metal	6 ⭐
+Golden Legend	10 ⭐
+Arctic Frost	15 ⭐
+Vintage Classic	Free (custom geometry)
+Beach Cruiser	2 ⭐ (custom geometry)
+Pixel Rider	4 ⭐ (pixel art style)
+Bimota Racer	8 ⭐ (exotic lattice frame)
+BMW S1000RR	12 ⭐ (full fairing sportbike)
+🔊 Audio (All Procedural — No Audio Files)
+Engine sound — sawtooth oscillator that changes pitch and filter based on speed & throttle
+Background music — generated 8-bar loop using sine waves
+Crash sound — white noise burst
+Star/flag sound — 2-note chime
+Win fanfare — 4-note ascending chord sequence
