@@ -86,6 +86,9 @@ const CW = 780, CH = 460;
 
 // ── State ─────────────────────────────────────────────────────
 let game = null, raf = null, paused = false;
+const TARGET_FPS = 60;
+const FRAME_INTERVAL = 1000 / TARGET_FPS; // ~16.667 ms
+let lastFrameTime = 0;
 let currentLevel = null;
 let gasDown = false, brakeDown = false;
 
@@ -328,11 +331,14 @@ function endGame(won) {
 //  Main loop
 // =============================================================
 
-function loop() {
+function loop(timestamp) {
   if (paused || !game || game.over) return;
+  raf = requestAnimationFrame(loop);
+  const elapsed = timestamp - lastFrameTime;
+  if (elapsed < FRAME_INTERVAL) return; // skip frame — not time yet
+  lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL); // stay in sync
   update();
   draw();
-  raf = requestAnimationFrame(loop);
 }
 
 // =============================================================
@@ -343,7 +349,7 @@ function update() {
   const g = game, b = g.bike;
   g.frameCount++;
 
-  const MAX_GAS_FORCE = 0.14;
+  const MAX_GAS_FORCE = 0.36;
   const BRAKE_FORCE   = 0.18;
   const GRAVITY       = 0.28;   // 🌙 Moon gravity — floaty & dramatic
   const FRICTION      = 0.970;
@@ -352,7 +358,7 @@ function update() {
   // ── Progressive Throttle (slow start → builds up) ──
   if (b.throttle === undefined) b.throttle = 0;
   if (gasDown && b.crashT === 0 && b.onGround) {
-    b.throttle = Math.min(1, b.throttle + 0.002); // very slow build-up
+    b.throttle = Math.min(1, b.throttle + 0.008); // fast build-up
   } else {
     b.throttle = Math.max(0, b.throttle - 0.025);
   }
@@ -380,7 +386,7 @@ function update() {
   }
 
   // Speed cap — starts slow, climbs to high speed at full throttle
-  const maxSpeed = 1 + 6 * b.throttle;
+  const maxSpeed = 1 + 16 * b.throttle;
   b.vx = Math.max(-3, Math.min(b.vx, maxSpeed));
   b.x += b.vx; b.y += b.vy;
   b.angle += b.angV;
