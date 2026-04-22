@@ -8,7 +8,7 @@
   <meta name="description" content="MOTO Trials: A mobile physics motorcycle game with 10 challenging tracks, 10 bike skins, and procedural audio. Built by Antigravity Games." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 
 <body>
@@ -43,7 +43,7 @@
 
         <div class="lp-stats">
           <div class="lp-stat">
-            <div class="lp-stat-num">10</div>
+            <div class="lp-stat-num">15</div>
             <div class="lp-stat-label">Levels</div>
           </div>
           <div class="lp-stat-div"></div>
@@ -70,10 +70,25 @@
         <p class="lp-free-note">Free to play · No downloads · Works on mobile</p>
       </div>
 
-      <!-- Floating bike image -->
+      <!-- Animated motorcycle scene -->
       <div class="lp-hero-visual">
-        <img src="hero.png" alt="MOTO Trials motorcycle" class="lp-hero-bike" />
-        <div class="lp-glow-ring"></div>
+        <div class="lp-scene">
+          <!-- Background hills silhouette -->
+          <div class="lp-scene-hills"></div>
+          <!-- Speed blur lines -->
+          <div class="lp-speed-lines">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <!-- Animated motorcycle GIF -->
+          <img src="A_stylized_digital_illustration_of_a_motorcyclist_walk-4-frames_east.gif"
+               alt="MOTO Trials motorcycle" class="lp-hero-bike lp-hero-bike-gif" />
+          <!-- Wheel dust -->
+          <div class="lp-dust"></div>
+          <!-- Orange glow halo -->
+          <div class="lp-glow-ring"></div>
+          <!-- Dirt ground strip -->
+          <div class="lp-scene-ground"></div>
+        </div>
       </div>
     </div>
 
@@ -340,13 +355,13 @@
           <div class="lp-ai-chip" style="--c:#ffd700">Bike Skin Artwork</div>
           <div class="lp-ai-chip" style="--c:#a855f7">UI & Visual Design</div>
           <div class="lp-ai-chip" style="--c:#4ade80">Procedural Audio</div>
-          <div class="lp-ai-chip" style="--c:#f472b6">Bug Fixes & Polish</div>
+          <div class="lp-ai-chip" style="--c:#f472b6">Bug Fixes &amp; Polish</div>
           <div class="lp-ai-chip" style="--c:#60a5fa">Level Unlock Logic</div>
-          <div class="lp-ai-chip" style="--c:#fb923c">Garage & Skin System</div>
+          <div class="lp-ai-chip" style="--c:#fb923c">Garage &amp; Skin System</div>
           <div class="lp-ai-chip" style="--c:#e2e8f0">Landing Page</div>
         </div>
         <button class="lp-play-btn lp-play-btn-sm" onclick="enterGame()" style="margin-top:40px">
-          <span class="lp-play-icon">▶</span>
+          <span class="lp-play-icon">&#x25B6;</span>
           <span>PLAY NOW</span>
         </button>
       </div>
@@ -354,83 +369,90 @@
 
     <!-- Footer -->
     <div class="lp-footer">
-      <span>© 2026 Antigravity Games</span>
-      <span>·</span>
+      <span>&copy; 2026 Antigravity Games</span>
+      <span>&middot;</span>
       <span>Built with Antigravity AI by Google DeepMind</span>
-      <span>·</span>
+      <span>&middot;</span>
       <span>MOTO Trials v1.0</span>
     </div>
 
   </div>
 
-  <!-- ══════════════════════════════════════
+  <!-- ================================================
        LEVEL SELECT SCREEN
-  ══════════════════════════════════════ -->
+  ================================================ -->
   <div id="levelSelect" style="display:none;">
+
+    <!-- Layered background: mountains + road + dust -->
+    <div class="ls-terrain"></div>
+    <div class="ls-speed-lines"></div>
+    <div class="ls-sun-rays"></div>
 
     <!-- Hero motorcycle image -->
     <img class="ls-hero" src="hero.png" alt="Moto Trials rider" />
 
     <!-- Logo top-left -->
     <div class="ls-logo-wrap">
-      <span class="ls-logo-main">MOTO<br>Trials</span>
+      <div class="ls-logo-badge">🏁 MOTOCROSS</div>
+      <div class="ls-logo-flame"></div>
+      <span class="ls-logo-main">MOTO<br><em class="ls-logo-accent">Trials</em></span>
       <span class="ls-logo-sub">by Antigravity Games</span>
     </div>
 
     <!-- Stars badge top-right -->
     <div class="ls-star-badge" id="homeStarBadge">⭐ 0</div>
 
+    <!-- Mini stats strip -->
+    <div class="ls-stats-strip">
+      <div class="ls-stat-pill">🏆 <span id="ls-best-dist">—</span></div>
+      <div class="ls-stat-pill">10 Levels</div>
+      <div class="ls-stat-pill">11 Skins</div>
+    </div>
+
     <!-- Bottom action buttons -->
     <div class="ls-actions">
-      <div class="ls-btn-row">
-        <button class="ls-game-btn" id="playBtn" onclick="openTrackSheet()">
-          <div class="ls-btn-icon"><span class="bike-icon">🏍️</span></div>
-          <div class="ls-btn-play-arrow"></div>
-          <span class="ls-btn-label">PLAY</span>
+      <button class="ls-play-big" id="playBtn" onclick="openTrackSheet()">
+        <span class="ls-play-arrow-big"></span>
+        <span class="ls-play-text-big">PLAY</span>
+        <div class="ls-play-pulse"></div>
+      </button>
+      <div class="ls-secondary-btns">
+        <button class="ls-sec-btn" onclick="openGarage()">
+          <span>🎨</span><span>SKINS</span>
         </button>
-      </div>
-      <div class="ls-btn-row">
-        <button class="ls-game-btn" onclick="openGarage()">
-          <div class="ls-btn-icon"><span class="bike-icon">🎨</span></div>
-          <div class="ls-btn-play-arrow" style="border-left-color:#9933cc;"></div>
-          <span class="ls-btn-label">Skins</span>
+        <button class="ls-sec-btn ls-sec-btn-alt" onclick="openTrackSheet()">
+          <span>🗺️</span><span>LEVELS</span>
         </button>
       </div>
     </div>
 
   </div>
 
-  <!-- Level select overlay (opens when tapping 🏁) -->
-  <div id="trackSheet" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(10,20,40,0.95);flex-direction:column;align-items:center;padding:24px 16px;overflow-y:auto;">
-    <button onclick="closeTrackSheet()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">✕</button>
-    <div style="font-size:26px;font-weight:900;color:#ffd700;text-shadow:0 2px 8px rgba(0,0,0,0.5);margin-bottom:20px;font-family:'Arial Black',Impact,sans-serif;">🏁 Choose Track</div>
+
+  <!-- Level select overlay -->
+  <div id="trackSheet" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(6,12,28,0.96);flex-direction:column;align-items:center;padding:24px 16px;overflow-y:auto;backdrop-filter:blur(12px);">
+    <button onclick="closeTrackSheet()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;">&#x2715;</button>
+    <div style="font-size:28px;font-weight:900;color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,0.5);margin-bottom:24px;font-family:'Arial Black',Impact,sans-serif;letter-spacing:1px;">&#x1F3C1; Choose Track</div>
     <div class="ls-grid" id="levelGrid"></div>
-    <div style="margin-top:12px;">
-      <button class="ls-reset" onclick="LevelManager.resetAll();buildLevelGrid();updateHomeStars();">↺ Reset Progress</button>
-    </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       GARAGE (SKIN SELECTION) SCREEN
-  ══════════════════════════════════════ -->
-  <div id="garageScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; width:100vw; height:100vh; background:#0f172a;">
-    <h2 style="color:white; font-size:32px; margin-bottom:20px; text-shadow:0 4px 10px rgba(0,0,0,0.5);">Skin Customization</h2>
-    
-    <div style="display:flex; align-items:center; gap:20px;">
-      <button onclick="prevSkin()" style="font-size:30px; background:none; border:none; color:white; padding:10px;">◀</button>
-      
-      <div style="background:#1e293b; border:4px solid rgba(255,255,255,0.1); border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); width: 350px;">
-        <h3 id="skinName" style="color:white; margin:0 0 10px 0; font-size:24px;">Classic Blaze</h3>
-        <canvas id="skinCanvas" width="300" height="200" style="background:#0f172a; border-radius:8px;"></canvas>
-        <p id="skinReq" style="color:#94a3b8; font-size:14px; margin-top:15px; font-weight:bold; height:20px;">Unlocked</p>
+  <!-- GARAGE SCREEN -->
+  <div id="garageScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;width:100vw;min-height:100dvh;background:linear-gradient(160deg,#0a0f1e 0%,#111827 45%,#1a0a2e 100%);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+    <h2 style="color:#fff;font-size:clamp(22px,5vw,34px);margin-bottom:4px;font-family:'Arial Black',Impact,sans-serif;letter-spacing:3px;text-shadow:0 0 30px rgba(139,92,246,0.7);position:relative;z-index:1;">&#x1F3A8; GARAGE</h2>
+    <p style="color:rgba(255,255,255,0.35);font-size:12px;margin-bottom:28px;letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;">Collect stars to unlock skins</p>
+    <div style="display:flex;align-items:center;gap:14px;position:relative;z-index:1;">
+      <button onclick="prevSkin()" style="font-size:26px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.14);color:white;width:50px;height:50px;border-radius:50%;cursor:pointer;">&#x2039;</button>
+      <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:24px;padding:22px 20px;display:flex;flex-direction:column;align-items:center;box-shadow:0 24px 64px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.07);width:clamp(270px,78vw,350px);backdrop-filter:blur(20px);">
+        <h3 id="skinName" style="color:#fff;margin:0 0 14px;font-size:clamp(16px,4vw,22px);font-family:'Arial Black',Impact,sans-serif;letter-spacing:1px;"></h3>
+        <canvas id="skinCanvas" width="300" height="200" style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;display:block;box-shadow:0 4px 20px rgba(0,0,0,0.5);"></canvas>
+        <p id="skinReq" style="color:#94a3b8;font-size:13px;margin-top:14px;font-weight:700;letter-spacing:0.5px;min-height:20px;"></p>
       </div>
-      
-      <button onclick="nextSkin()" style="font-size:30px; background:none; border:none; color:white; padding:10px;">▶</button>
+      <button onclick="nextSkin()" style="font-size:26px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.14);color:white;width:50px;height:50px;border-radius:50%;cursor:pointer;">&#x203a;</button>
     </div>
-
-    <div style="display:flex; gap:20px; margin-top:30px;">
-      <button onclick="closeGarage()" style="background:#334155; color:white; border:none; padding:12px 30px; font-size:18px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.3);">Cancel</button>
-      <button id="equipSkinBtn" onclick="equipSkin()" style="background:#3b82f6; color:white; border:none; padding:12px 40px; font-size:18px; font-weight:bold; border-radius:8px; box-shadow:0 4px 15px rgba(59,130,246,0.4);">EQUIP</button>
+    <div style="display:flex;gap:14px;margin-top:26px;position:relative;z-index:1;">
+      <button onclick="closeGarage()" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.75);border:1.5px solid rgba(255,255,255,0.14);padding:12px 30px;font-size:14px;font-weight:700;border-radius:50px;cursor:pointer;letter-spacing:1px;">Cancel</button>
+      <button id="equipSkinBtn" onclick="equipSkin()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;padding:12px 38px;font-size:14px;font-weight:900;border-radius:50px;cursor:pointer;letter-spacing:2px;box-shadow:0 4px 24px rgba(99,102,241,0.55);">EQUIP</button>
     </div>
   </div>
 
@@ -439,7 +461,13 @@
   ══════════════════════════════════════ -->
   <div id="gameScreen" style="display:none;">
     <div id="wrap">
-      <canvas id="gameCanvas" width="780" height="460"></canvas>
+      <canvas id="gameCanvas" width="787" height="400"></canvas>
+
+      <!-- Animated GIF bike overlay — positioned by JS each frame -->
+      <img id="gifBike"
+           src="A_stylized_digital_illustration_of_a_motorcyclist_walk-4-frames_east.gif"
+           style="position:absolute;display:none;pointer-events:none;transform-origin:50% 82%;image-rendering:pixelated;"
+           alt="bike">
 
       <!-- HUD: distance & pause -->
       <div id="hud">

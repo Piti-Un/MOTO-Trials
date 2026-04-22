@@ -280,17 +280,111 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* ── Hero visual / bike ── */
+/* ── Hero visual scene ── */
 .lp-hero-visual {
   flex: 1;
   position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  max-width: 480px;
+  max-width: 520px;
   animation: lpFadeUp 0.7s 0.25s both;
+  min-height: 340px;
 }
 
+/* Outer scene card */
+.lp-scene {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(20,12,5,0) 0%, rgba(30,15,5,0.55) 60%, rgba(50,25,5,0.85) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(255,120,30,0.18);
+  overflow: hidden;
+  padding-bottom: 32px;
+  box-shadow: 0 0 60px rgba(255,90,31,0.15), inset 0 0 40px rgba(255,90,31,0.06);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Sky gradient inside scene */
+.lp-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 60% 30%, rgba(255,100,20,0.18) 0%, transparent 70%),
+    linear-gradient(180deg, #1a0d05 0%, #2a1508 60%, #3d1f08 100%);
+  z-index: 0;
+}
+
+/* Hill silhouette */
+.lp-scene-hills {
+  position: absolute;
+  bottom: 44px;
+  left: 0; right: 0;
+  height: 80px;
+  background:
+    radial-gradient(ellipse 60% 100% at 20% 100%, #1a0a02 40%, transparent 100%),
+    radial-gradient(ellipse 80% 100% at 75% 100%, #1e0d03 50%, transparent 100%);
+  z-index: 1;
+}
+
+/* Dirt ground strip */
+.lp-scene-ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: linear-gradient(180deg, #5c3010 0%, #3d1f08 60%, #2a1008 100%);
+  border-top: 2px solid rgba(255,140,40,0.35);
+  z-index: 2;
+}
+
+.lp-scene-ground::before {
+  content: '';
+  position: absolute;
+  top: 4px; left: 0; right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255,160,60,0.12) 0px, rgba(255,160,60,0.12) 30px,
+    transparent 30px, transparent 60px
+  );
+}
+
+/* Speed blur lines */
+.lp-speed-lines {
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  transform: translateY(-50%);
+  height: 120px;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lp-speed-lines span {
+  position: absolute;
+  left: -100%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,120,40,0.6), transparent);
+  animation: speedLine 1.2s linear infinite;
+}
+.lp-speed-lines span:nth-child(1){ top:15%; width:55%; animation-delay:0s; opacity:0.7; }
+.lp-speed-lines span:nth-child(2){ top:35%; width:80%; animation-delay:0.25s; opacity:0.5; height:1px; }
+.lp-speed-lines span:nth-child(3){ top:55%; width:65%; animation-delay:0.5s; opacity:0.8; }
+.lp-speed-lines span:nth-child(4){ top:70%; width:40%; animation-delay:0.1s; opacity:0.4; height:1px; }
+.lp-speed-lines span:nth-child(5){ top:85%; width:70%; animation-delay:0.7s; opacity:0.6; }
+
+@keyframes speedLine {
+  0%   { left: -100%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: 110%; opacity: 0; }
+}
+
+/* The bike GIF */
 .lp-hero-bike {
   width: 100%;
   max-height: 380px;
@@ -298,7 +392,22 @@ body {
   filter: drop-shadow(-10px 20px 30px rgba(255,90,31,0.45));
   animation: bikeFloat 3.5s ease-in-out infinite;
   position: relative;
-  z-index: 2;
+  z-index: 3;
+}
+
+.lp-hero-bike-gif {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: auto;
+  height: 340px;
+  max-height: 340px;
+  filter:
+    drop-shadow(0 0 24px rgba(255,120,40,0.9))
+    drop-shadow(-8px 8px 16px rgba(0,0,0,0.8));
+  animation: bikeRide 0.35s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 3;
+  transform-origin: center bottom;
 }
 
 @keyframes bikeFloat {
@@ -306,22 +415,49 @@ body {
   50%      { transform: translateY(-16px) rotate(-0.5deg); }
 }
 
+@keyframes bikeRide {
+  0%   { transform: translateY(0px) rotate(-1deg); }
+  100% { transform: translateY(-4px) rotate(0.5deg); }
+}
+
+/* Wheel dust */
+.lp-dust {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-60%);
+  width: 80px;
+  height: 30px;
+  background: radial-gradient(ellipse, rgba(180,110,40,0.55) 0%, transparent 70%);
+  filter: blur(6px);
+  z-index: 2;
+  animation: dustPuff 0.6s ease-out infinite alternate;
+}
+
+@keyframes dustPuff {
+  0%   { opacity: 0.8; transform: translateX(-60%) scaleX(1); }
+  100% { opacity: 0.3; transform: translateX(-55%) scaleX(1.4); }
+}
+
+/* Orange glow halo under bike */
 .lp-glow-ring {
   position: absolute;
-  bottom: -10px;
+  bottom: 36px;
   left: 50%;
   transform: translateX(-50%);
-  width: 70%;
-  height: 40px;
-  background: radial-gradient(ellipse, rgba(255,90,31,0.45) 0%, transparent 70%);
-  filter: blur(14px);
-  animation: glowPulse 3.5s ease-in-out infinite;
+  width: 80%;
+  height: 30px;
+  background: radial-gradient(ellipse, rgba(255,90,31,0.6) 0%, transparent 70%);
+  filter: blur(12px);
+  z-index: 2;
+  animation: glowPulse 1.2s ease-in-out infinite alternate;
 }
 
 @keyframes glowPulse {
-  0%,100% { opacity: 0.8; transform: translateX(-50%) scaleX(1); }
-  50%      { opacity: 0.4; transform: translateX(-50%) scaleX(0.85); }
+  0%   { opacity: 1;   transform: translateX(-50%) scaleX(1); }
+  100% { opacity: 0.4; transform: translateX(-50%) scaleX(0.8); }
 }
+
 
 /* ── Feature cards ── */
 .lp-features {
@@ -899,7 +1035,7 @@ body {
 }
 
 /* ============================================================
-   LEVEL SELECT SCREEN — Bike Race Style Home
+   LEVEL SELECT SCREEN — Premium Racing Style
    ============================================================ */
 #levelSelect {
   position: relative;
@@ -907,76 +1043,349 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  /* NO overflow:hidden — it clips touch events on mobile! */
+  overflow: hidden;
+  /* Deep sunset-to-night racing sky */
   background:
     linear-gradient(180deg,
-      #87ceeb 0%,
-      #b0dff0 30%,
-      #d4eef5 50%,
-      #e8c870 72%,
-      #c8973a 85%,
+      #0a0010 0%,
+      #1a0428 8%,
+      #38084a 18%,
+      #8b1a1a 35%,
+      #c8400a 52%,
+      #e87520 65%,
+      #d4a040 78%,
+      #c8903a 88%,
       #a06820 100%);
 }
 
-/* ── Sun glow ── */
+/* ── Dramatic sun burst ── */
 #levelSelect::before {
   content: '';
   position: absolute;
-  top: 6%; left: 55%;
-  width: 120px; height: 120px;
-  background: radial-gradient(circle, #fffde0 0%, rgba(255,240,80,0.6) 40%, transparent 70%);
+  top: 28%; left: 52%;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle,
+    rgba(255,255,180,1) 0%,
+    rgba(255,220,60,0.85) 18%,
+    rgba(255,140,0,0.55) 40%,
+    rgba(200,60,0,0.2) 65%,
+    transparent 80%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
+  animation: sunPulse 4s ease-in-out infinite;
 }
 
-/* ── Desert ground shadow ── */
+/* ── Ground shadow ── */
 #levelSelect::after {
   content: '';
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 38%;
-  background: linear-gradient(180deg, transparent 0%, rgba(120,60,10,0.25) 100%);
+  height: 40%;
+  background: linear-gradient(180deg, transparent 0%, rgba(60,20,0,0.55) 100%);
   pointer-events: none;
   z-index: 0;
+}
+
+/* ── Mountain terrain silhouette ── */
+.ls-terrain {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 42%;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    /* Road line hints */
+    linear-gradient(180deg, transparent 80%, rgba(80,40,10,0.6) 100%);
+  /* SVG mountain silhouette via clip-path cascade */
+  clip-path: polygon(
+    0% 100%, 0% 55%,
+    4% 52%, 8% 45%, 12% 48%, 16% 38%,
+    20% 42%, 25% 30%, 30% 36%, 34% 25%,
+    38% 30%, 42% 35%, 46% 28%, 50% 32%,
+    54% 22%, 58% 28%, 62% 33%, 66% 26%,
+    70% 30%, 74% 38%, 78% 32%, 82% 40%,
+    86% 35%, 90% 45%, 94% 40%, 98% 50%,
+    100% 48%, 100% 100%
+  );
+  background-color: #1a0c04;
+  filter: brightness(0.6);
+}
+
+/* ── Animated speed lines (cinematic feel) ── */
+.ls-speed-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.ls-speed-lines::before,
+.ls-speed-lines::after {
+  content: '';
+  position: absolute;
+  top: 55%; left: -20%;
+  width: 60%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,160,40,0.35), transparent);
+  transform: rotate(-4deg);
+  animation: speedLine 2.4s linear infinite;
+}
+.ls-speed-lines::after {
+  top: 62%; left: -40%;
+  width: 50%;
+  animation-delay: 1.2s;
+  opacity: 0.55;
+}
+@keyframes speedLine {
+  0%   { transform: translateX(0) rotate(-4deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(200%) rotate(-4deg); opacity: 0; }
 }
 
 /* ── Hero motorcycle image ── */
 .ls-hero {
   position: absolute;
   right: 0;
-  bottom: 28%;    /* keep hero above the buttons */
-  height: 55%;
-  max-height: 400px;
-  z-index: 1;
+  bottom: 15%;
+  height: 68%;
+  max-height: 500px;
+  max-width: 48%;
+  z-index: 2;
   pointer-events: none;
-  filter: drop-shadow(-8px 12px 20px rgba(0,0,0,0.4));
-  animation: heroFloat 3s ease-in-out infinite;
+  object-fit: cover;
+  border-radius: 24px 0 0 24px;
+  box-shadow:
+    -8px 0 60px rgba(255,100,0,0.5),
+    -2px 0 30px rgba(0,0,0,0.7),
+    inset -1px 0 0 rgba(255,160,60,0.3);
+  border-left: 2px solid rgba(255,140,40,0.4);
+  border-top: 2px solid rgba(255,140,40,0.25);
+  animation: heroFloat 3.5s ease-in-out infinite;
 }
 @keyframes heroFloat {
-  0%,100% { transform: translateY(0) rotate(-2deg); }
-  50%      { transform: translateY(-12px) rotate(0deg); }
+  0%,100% { transform: translateY(0) rotate(-1deg) scale(1); }
+  50%      { transform: translateY(-14px) rotate(0.5deg) scale(1.01); }
+}
+
+
+/* ── Logo badge above logo ── */
+.ls-logo-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff2200, #ff6600);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(255,60,0,0.5);
+}
+
+/* ── "Trials" accent color ── */
+.ls-logo-accent {
+  font-style: normal;
+  color: #ffd700;
+  text-shadow:
+    2px 2px 0 #a06000,
+    4px 4px 0 #7a4400,
+    0 0 20px rgba(255,215,0,0.4);
+}
+
+/* ── Sun rays decorative element ── */
+.ls-sun-rays {
+  position: absolute;
+  top: -5%;
+  right: 20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255,240,100,0.9) 0%, rgba(255,210,0,0.4) 30%, transparent 65%);
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: sunPulse 4s ease-in-out infinite;
+}
+@keyframes sunPulse {
+  0%,100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+
+/* ── Dust particles (decorative) ── */
+.ls-dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 70%, rgba(200,150,60,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 80%, rgba(200,150,60,0.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 70% 65%, rgba(200,150,60,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 75%, rgba(200,150,60,0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 10% 55%, rgba(200,150,60,0.4) 0%, transparent 100%);
+}
+
+/* ── Big PLAY button ── */
+.ls-play-big {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(180deg, #2edf55 0%, #16aa36 50%, #0e8828 100%);
+  border: none;
+  border-radius: 20px;
+  padding: 18px 40px 18px 28px;
+  cursor: pointer;
+  box-shadow:
+    0 7px 0 #074d16,
+    0 10px 30px rgba(0,0,0,0.55),
+    0 0 40px rgba(40,220,80,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  transition: transform 0.1s, box-shadow 0.1s;
+  min-width: 210px;
+  position: relative;
+  overflow: visible;
+}
+.ls-play-big:hover {
+  box-shadow:
+    0 7px 0 #074d16,
+    0 10px 30px rgba(0,0,0,0.55),
+    0 0 60px rgba(40,220,80,0.6);
+}
+.ls-play-big:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 #074d16, 0 4px 12px rgba(0,0,0,0.35);
+}
+/* Pulse ring animation around PLAY button */
+.ls-play-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 28px;
+  border: 2.5px solid rgba(50,240,100,0.5);
+  animation: playPulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes playPulse {
+  0%   { transform: scale(1);    opacity: 0.7; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+.ls-play-arrow-big {
+  width: 0; height: 0;
+  border-top: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+  border-left: 32px solid #fff;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  flex-shrink: 0;
+}
+.ls-play-text-big {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 3px;
+  font-family: 'Arial Black', Impact, sans-serif;
+  text-shadow: 0 3px 6px rgba(0,0,0,0.4);
+}
+
+/* ── Secondary buttons row ── */
+.ls-secondary-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.ls-sec-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.92);
+  border: none;
+  border-radius: 50px;
+  padding: 11px 22px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.28), 0 7px 18px rgba(0,0,0,0.35);
+  font-size: 14px;
+  font-weight: 900;
+  color: #222;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Arial Black', Impact, sans-serif;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.ls-sec-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.2);
+}
+/* Alternate teal color for second button */
+.ls-sec-btn-alt {
+  background: linear-gradient(180deg, #22d4cc, #14999a);
+  color: #fff;
+  box-shadow: 0 5px 0 #0a6e6e, 0 7px 18px rgba(0,0,0,0.35);
+}
+.ls-sec-btn-alt:active {
+  box-shadow: 0 1px 0 #0a6e6e, 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Stats strip ── */
+.ls-stats-strip {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+}
+.ls-stat-pill {
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 /* ── Logo ── */
 .ls-logo-wrap {
   position: relative;
-  z-index: 2;
-  padding: 28px 24px 0;
+  z-index: 3;
+  padding: 24px 22px 0;
+}
+/* Flame glow behind logo */
+.ls-logo-flame {
+  position: absolute;
+  top: 20px; left: 10px;
+  width: 200px; height: 120px;
+  background: radial-gradient(ellipse at 50% 80%,
+    rgba(255,80,0,0.55) 0%,
+    rgba(255,160,0,0.3) 40%,
+    transparent 70%);
+  pointer-events: none;
+  filter: blur(12px);
+  animation: flamePulse 2s ease-in-out infinite;
+}
+@keyframes flamePulse {
+  0%,100% { opacity: 0.7; transform: scaleY(1); }
+  50%      { opacity: 1;   transform: scaleY(1.1) scaleX(1.05); }
 }
 .ls-logo-main {
-  font-size: clamp(48px, 12vw, 72px);
+  font-size: clamp(52px, 14vw, 82px);
   font-weight: 900;
   font-family: 'Arial Black', Impact, sans-serif;
-  line-height: 0.9;
+  line-height: 0.88;
   color: #ff2200;
   text-shadow:
     3px 3px 0 #8b0000,
     6px 6px 0 #5a0000,
-    0 0 30px rgba(255,60,0,0.5),
+    0 0 40px rgba(255,60,0,0.7),
+    0 0 80px rgba(255,60,0,0.3),
     -2px -2px 0 #ff6644;
-  letter-spacing: -1px;
+  letter-spacing: -2px;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 .ls-logo-sub {
   font-size: clamp(12px, 3vw, 16px);

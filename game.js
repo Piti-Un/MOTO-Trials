@@ -81,7 +81,8 @@ const sfx = {
 // ── Canvas ───────────────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
 let ctx    = canvas.getContext('2d');
-const CW = 780, CH = 460;
+const CW = 787, CH = 400;
+
 
 
 // ── State ─────────────────────────────────────────────────────
@@ -349,44 +350,97 @@ function update() {
   const g = game, b = g.bike;
   g.frameCount++;
 
-  const MAX_GAS_FORCE = 0.36;
-  const BRAKE_FORCE   = 0.18;
-  const GRAVITY       = 0.28;   // 🌙 Moon gravity — floaty & dramatic
-  const FRICTION      = 0.970;
-  const ANG_DAMP      = 0.86;
-  
-  // ── Progressive Throttle (slow start → builds up) ──
-  if (b.throttle === undefined) b.throttle = 0;
-  if (gasDown && b.crashT === 0 && b.onGround) {
-    b.throttle = Math.min(1, b.throttle + 0.008); // fast build-up
+  const MAX_GAS_FORCE = 0.44;
+  const BRAKE_FORCE   = 0.26;
+  const GRAVITY       = 0.42;
+  const FRICTION      = 0.978;
+  const ANG_DAMP      = 0.82;
+
+  // Init physics state
+  if (b.throttle    === undefined) b.throttle    = 0;
+  if (b.wheelieT    === undefined) b.wheelieT    = 0;
+  if (b.stoppieT    === undefined) b.stoppieT    = 0;
+  if (b.suspension  === undefined) b.suspension  = 0;
+  if (b.prevY       === undefined) b.prevY       = b.y;
+
+  // ── Suspension compression (bounce from terrain impact) ──
+  const verticalHit = b.y - b.prevY;
+  if (b.onGround && verticalHit > 1.5) {
+    b.suspension = Math.min(verticalHit * 0.6, 8); // compress on bump
   } else {
-    b.throttle = Math.max(0, b.throttle - 0.025);
+    b.suspension *= 0.75; // spring back
   }
+  b.prevY = b.y;
+
+  // ── Progressive Throttle ──
+  if (gasDown && b.crashT === 0 && b.onGround) {
+    b.throttle = Math.min(1, b.throttle + 0.012);
+  } else {
+    b.throttle = Math.max(0, b.throttle - 0.030);
+  }
+
+  const speed = Math.abs(b.vx);
 
   // ── 2-Wheel Physics ──
   b.vy += GRAVITY;
-  
+
   if (b.crashT === 0) {
-    if (gasDown) { 
-      // Air tilt: lean back on ground, rotate forward in air for style
-      b.angV -= b.onGround ? 0.018 : 0.008;
+    if (gasDown) {
+      const lean = b.onGround ? 0.016 : 0.007;
+      b.angV -= lean;
       const throttleForce = MAX_GAS_FORCE * (0.15 + 0.85 * b.throttle);
-      b.vx += Math.cos(b.angle) * (b.onGround ? throttleForce : MAX_GAS_FORCE * 0.08);
+      b.vx += Math.cos(b.angle) * (b.onGround ? throttleForce : MAX_GAS_FORCE * 0.06);
     }
     if (brakeDown) {
-      b.angV += b.onGround ? 0.018 : 0.012; // lean forward / backflip assist
+      b.angV += b.onGround ? 0.016 : 0.010;
       b.throttle = 0;
-      b.vx -= b.onGround ? BRAKE_FORCE : (BRAKE_FORCE * 0.10);
+      b.vx -= b.onGround ? BRAKE_FORCE : (BRAKE_FORCE * 0.08);
     }
-
-    // ── Mid-air auto-stabilizer (gently rights the bike when no input) ──
     if (!b.onGround && !gasDown && !brakeDown) {
-      b.angV *= 0.92; // dampen spin so it lands more safely
+      b.angV *= 0.90;
     }
   }
 
-  // Speed cap — starts slow, climbs to high speed at full throttle
-  const maxSpeed = 1 + 16 * b.throttle;
+  // ── WHEELIE physics ──
+  // Triggers when: on ground, going fast, throttle full, leaning back
+  if (b.onGround && b.crashT === 0 && gasDown && b.throttle > 0.7 && speed > 5 && b.angle < -0.05) {
+    b.wheelieT = Math.min(b.wheelieT + 1, 90);  // build up
+    // Lift front wheel by boosting rear torque
+    b.angV -= 0.025 * (b.throttle - 0.6);        // rear wheel digs in, front lifts
+    if (b.wheelieT > 10) {
+      // Spawn rear wheel smoke burst
+      spawnParticles(b.x - Math.cos(b.angle)*28, b.y + Math.sin(b.angle)*5, '#c8a060', 2);
+      spawnParticles(b.x - Math.cos(b.angle)*28, b.y + Math.sin(b.angle)*5, '#fff8e0', 1);
+    }
+  } else {
+    b.wheelieT = Math.max(0, b.wheelieT - 3);  // decay
+  }
+
+  // ── STOPPIE physics ──
+  // Triggers when: braking hard at speed
+  if (b.onGround && b.crashT === 0 && brakeDown && speed > 6) {
+    b.stoppieT = Math.min(b.stoppieT + 1, 60);
+    if (b.stoppieT > 8) {
+      // Front digs, rear lifts — reverse the lean effect
+      b.angV -= 0.018; // front digs in creates lift force
+      // Front wheel skid particles
+      spawnParticles(b.x + Math.cos(b.angle)*28, b.y + Math.sin(b.angle)*5, '#808090', 3);
+    }
+  } else {
+    b.stoppieT = Math.max(0, b.stoppieT - 4);
+  }
+
+  // ── Nitro burst at peak speed ──
+  if (b.onGround && speed > 11 && g.frameCount % 3 === 0) {
+    spawnParticles(
+      b.x - Math.cos(b.angle)*30,
+      b.y + (Math.random()-0.5)*6,
+      '#ffaa00', 2
+    );
+  }
+
+  // Speed cap
+  const maxSpeed = 1 + 14 * b.throttle;
   b.vx = Math.max(-3, Math.min(b.vx, maxSpeed));
   b.x += b.vx; b.y += b.vy;
   b.angle += b.angV;
@@ -406,7 +460,6 @@ function update() {
   const try_ = getTrackY(rx, g.track);
 
 
-  const speed = Math.abs(b.vx);
   const isFlying = !b.onGround;
 
 
@@ -421,18 +474,13 @@ function update() {
   }
 
   // ── Ground Collision ──
-  // At high speed, reduce margin so bike can naturally leave ramps
-  const margin = speed > 3.5 ? 0 : 4;
+  // Keep a minimum margin even at speed so bumps don't launch the bike
+  const margin = speed > 8 ? 3 : speed > 4 ? 5 : 8;
 
-  // ─ Natural Ramp Launch ─
-  // If track drops sharply ahead while going fast, let the bike fly
-  const aheadX = b.x + b.vx * 6;
-  const trackDrop = getTrackY(aheadX, g.track) - getTrackY(b.x, g.track);
-  if (b.onGround && speed > 3 && trackDrop > 10 && b.crashT === 0) {
-    const launchPower = Math.min((speed - 3) * 0.6, 5);
-    b.vy -= launchPower;
-    spawnParticles(b.x, b.y + WR, '#d4882a', 8);
-    spawnParticles(b.x, b.y + WR, '#fff8e0', 5);
+  // Slope-hug: if already on ground and terrain dips, pull bike down to follow it
+  if (b.onGround) {
+    const groundMid = (tfy + try_) / 2 - WR;
+    if (b.y < groundMid - 2) b.y += Math.min((groundMid - b.y) * 0.4, 8);
   }
 
   b.onGround = false;
@@ -452,7 +500,7 @@ function update() {
     }
     b.y = (fy + ry) / 2;
 
-    // 💥 Landing impact: dust burst proportional to fall speed
+    // Landing impact dust
     if (wasAirborne) {
       const impact = Math.min(Math.abs(b.vy), 12);
       const dustCount = Math.floor(impact * 2.5);
@@ -460,10 +508,11 @@ function update() {
       spawnParticles(b.x, b.y + WR, '#fff8e0', Math.floor(dustCount * 0.5));
     }
 
-    b.vy *= -0.08;
-    if (Math.abs(b.vy) < 1) b.vy = 0;
-    b.angV *= 0.45;
+    b.vy *= -0.05;
+    if (Math.abs(b.vy) < 0.8) b.vy = 0;
+    b.angV *= 0.35;
   }
+
 
   // \u2500\u2500 Head Crash Detection \u2500\u2500
   // Rider head is roughly 25px straight up from the bike center
@@ -771,7 +820,9 @@ function drawCheckeredFlag(sx, gy, index, collected, frame) {
 function drawGroundTexture(theme, tc, vis, cam, g) {
   if (vis.length < 2) return;
   const fc = g ? g.frameCount : 0;
+  ctx.save();
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.shadowBlur = 0;
 
   switch (theme) {
 
@@ -937,6 +988,240 @@ function drawGroundTexture(theme, tc, vis, cam, g) {
       break;
     }
 
+    // ─ Rocky: jagged cracks and rock face lines ─
+    case 'rocky': {
+      ctx.strokeStyle = 'rgba(80,60,30,0.5)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < vis.length-4; i+=8) {
+        const pt = vis[i], sx = pt.x-cam;
+        const jag = (i%3-1)*4;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+3); ctx.lineTo(sx+6, pt.y+3+jag); ctx.lineTo(sx+14, pt.y+5); ctx.stroke();
+      }
+      // Big rock boulders
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      for (let i = 6; i < vis.length-6; i+=25) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+4, pt.y+6, 12, 7, 0.4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(160,130,80,0.15)';
+        ctx.beginPath(); ctx.ellipse(sx-2, pt.y+4, 6, 3, -0.3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      }
+      // Gravel chips
+      ctx.fillStyle = 'rgba(100,80,50,0.4)';
+      for (let i = 2; i < vis.length-2; i+=10) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.arc(sx+3, pt.y+2, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx+9, pt.y+8, 1, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    }
+
+    // ─ Canyon: red-rock layered strata ─
+    case 'canyon': {
+      ctx.strokeStyle = 'rgba(120,40,10,0.5)'; ctx.lineWidth = 1.2;
+      for (let i = 0; i < vis.length-3; i+=6) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+8); ctx.lineTo(sx+20, pt.y+8); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+18); ctx.lineTo(sx+20, pt.y+18); ctx.stroke();
+      }
+      // Deep shadow cracks
+      ctx.strokeStyle = 'rgba(60,0,0,0.6)'; ctx.lineWidth = 1;
+      for (let i = 4; i < vis.length-4; i+=18) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx+5, pt.y+1); ctx.lineTo(sx+3, pt.y+20); ctx.stroke();
+      }
+      // Warm dust on surface
+      ctx.fillStyle = 'rgba(220,100,30,0.12)';
+      for (let i = 8; i < vis.length-8; i+=30) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+8, pt.y+3, 14, 4, 0, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    }
+
+    // ─ Storm: dark cracked mud with lightning-strike scorches ─
+    case 'storm': {
+      ctx.strokeStyle = 'rgba(40,20,60,0.6)'; ctx.lineWidth = 1.2;
+      for (let i = 0; i < vis.length-4; i+=7) {
+        const pt = vis[i], sx = pt.x-cam;
+        const zig = (i%2 ? 3 : -3);
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+4); ctx.lineTo(sx+8, pt.y+4+zig); ctx.lineTo(sx+16, pt.y+4); ctx.stroke();
+      }
+      // Scorch patches (purple/black)
+      ctx.fillStyle = 'rgba(80,0,120,0.25)';
+      for (let i = 5; i < vis.length-5; i+=22) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+6, pt.y+9, 10, 5, 0.2, 0, Math.PI*2); ctx.fill();
+      }
+      // Lightning crack lines
+      ctx.strokeStyle = 'rgba(180,100,255,0.3)'; ctx.lineWidth = 1;
+      for (let i = 10; i < vis.length-10; i+=35) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+2); ctx.lineTo(sx+4, pt.y+10); ctx.lineTo(sx+2, pt.y+20); ctx.stroke();
+      }
+      break;
+    }
+
+    // ─ Abyss: deep dark swampy jungle floor ─
+    case 'abyss': {
+      // Swamp water puddles
+      ctx.fillStyle = 'rgba(0,20,0,0.6)';
+      for (let i = 5; i < vis.length-5; i+=20) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+8, pt.y+10, 22, 7, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,60,10,0.2)';
+        ctx.beginPath(); ctx.ellipse(sx+4, pt.y+8, 9, 3, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,20,0,0.6)';
+      }
+      // Twisted roots on surface
+      ctx.strokeStyle = '#0d1a08'; ctx.lineWidth = 2;
+      for (let i = 0; i < vis.length-4; i+=8) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y); ctx.quadraticCurveTo(sx+6, pt.y-5, sx+14, pt.y+1); ctx.stroke();
+      }
+      // Glow spores
+      ctx.fillStyle = 'rgba(80,255,60,0.12)';
+      for (let i = 3; i < vis.length-3; i+=15) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.arc(sx+5, pt.y+2, 3, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    }
+
+    // ─ Volcano: cracked lava crust with glow ─
+    case 'volcano': {
+      // Lava cracks glowing orange
+      ctx.strokeStyle = 'rgba(255,80,0,0.5)'; ctx.lineWidth = 2;
+      ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 4;
+      for (let i = 0; i < vis.length-4; i+=10) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+2); ctx.lineTo(sx+5, pt.y+12); ctx.lineTo(sx+11, pt.y+5); ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      // Dark lava rock surface
+      ctx.strokeStyle = 'rgba(80,20,0,0.7)'; ctx.lineWidth = 1;
+      for (let i = 3; i < vis.length-3; i+=6) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+6); ctx.lineTo(sx+18, pt.y+7); ctx.stroke();
+      }
+      // Ember sparks (small dots)
+      ctx.fillStyle = 'rgba(255,160,0,0.4)';
+      for (let i = 7; i < vis.length-7; i+=18) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.arc(sx+3, pt.y+1, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx+11, pt.y+3, 1.5, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    }
+
+    // ─ Snow: powder ripples + ice crystals ─
+    case 'snow': {
+      // Soft snow ripples
+      ctx.strokeStyle = 'rgba(200,230,255,0.5)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < vis.length-4; i+=5) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath();
+        ctx.moveTo(sx, pt.y+4);
+        ctx.quadraticCurveTo(sx+7, pt.y+1, sx+14, pt.y+4);
+        ctx.stroke();
+      }
+      // Sparkle crystals
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+      for (let i = 4; i < vis.length-4; i+=18) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx-3, pt.y+2); ctx.lineTo(sx+3, pt.y+2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx, pt.y-1); ctx.lineTo(sx, pt.y+5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx-2, pt.y); ctx.lineTo(sx+2, pt.y+4); ctx.stroke();
+      }
+      // Ice gloss highlights
+      ctx.fillStyle = 'rgba(200,240,255,0.18)';
+      for (let i = 6; i < vis.length-6; i+=25) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+8, pt.y+2, 16, 3, 0, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    }
+
+    // ─ Beach: sandy waves + shells ─
+    case 'beach': {
+      // Wave ripples
+      ctx.strokeStyle = 'rgba(100,160,220,0.3)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < vis.length-4; i+=6) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath();
+        ctx.moveTo(sx, pt.y+5);
+        ctx.quadraticCurveTo(sx+8, pt.y+2, sx+18, pt.y+6);
+        ctx.stroke();
+      }
+      // Sand texture dots
+      ctx.fillStyle = 'rgba(180,140,60,0.4)';
+      for (let i = 2; i < vis.length-2; i+=8) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.arc(sx+4, pt.y+8, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx+10, pt.y+15, 1, 0, Math.PI*2); ctx.fill();
+      }
+      // Shells
+      ctx.fillStyle = 'rgba(255,255,230,0.5)';
+      for (let i = 8; i < vis.length-8; i+=30) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+6, pt.y+4, 5, 3, 0.5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = 'rgba(200,160,80,0.3)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(sx+4, pt.y+3); ctx.lineTo(sx+8, pt.y+5); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,230,0.5)';
+      }
+      break;
+    }
+
+    // ─ Cave: stalactites and crystal glow ─
+    case 'cave': {
+      // Ground crystal glow
+      ctx.strokeStyle = 'rgba(140,80,255,0.4)'; ctx.lineWidth = 2;
+      ctx.shadowColor = '#8844ff'; ctx.shadowBlur = 6;
+      for (let i = 0; i < vis.length-4; i+=9) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx+4, pt.y); ctx.lineTo(sx+4, pt.y+14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx+10, pt.y); ctx.lineTo(sx+12, pt.y+10); ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      // Dark cave floor patches
+      ctx.fillStyle = 'rgba(0,0,20,0.4)';
+      for (let i = 5; i < vis.length-5; i+=20) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+7, pt.y+12, 14, 5, 0, 0, Math.PI*2); ctx.fill();
+      }
+      // Crystal face shine
+      ctx.fillStyle = 'rgba(200,160,255,0.12)';
+      for (let i = 2; i < vis.length-2; i+=14) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+5, pt.y+5, 7, 3, 0.3, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    }
+
+    // ─ Space: asteroid dust and craters ─
+    case 'space': {
+      // Crater rim rings
+      ctx.strokeStyle = 'rgba(120,120,140,0.4)'; ctx.lineWidth = 1.5;
+      for (let i = 5; i < vis.length-5; i+=22) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.ellipse(sx+8, pt.y+8, 14, 6, 0, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = 'rgba(20,20,30,0.35)';
+        ctx.beginPath(); ctx.ellipse(sx+8, pt.y+8, 11, 4, 0, 0, Math.PI*2); ctx.fill();
+      }
+      // Dust scatter
+      ctx.fillStyle = 'rgba(180,180,200,0.25)';
+      for (let i = 2; i < vis.length-2; i+=7) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.arc(sx+3, pt.y+3, 1.5, 0, Math.PI*2); ctx.fill();
+      }
+      // Glowing meteor streak
+      ctx.strokeStyle = 'rgba(200,160,255,0.2)'; ctx.lineWidth = 1;
+      for (let i = 8; i < vis.length-8; i+=30) {
+        const pt = vis[i], sx = pt.x-cam;
+        ctx.beginPath(); ctx.moveTo(sx, pt.y+2); ctx.lineTo(sx+20, pt.y+5); ctx.stroke();
+      }
+      break;
+    }
+
     // ─ Default fallback ─
     default: {
       ctx.strokeStyle = tc.dirt; ctx.lineWidth = 2;
@@ -944,20 +1229,34 @@ function drawGroundTexture(theme, tc, vis, cam, g) {
         const pt = vis[i], sx = pt.x-cam;
         ctx.beginPath(); ctx.moveTo(sx, pt.y+3); ctx.lineTo(sx+12, pt.y+8); ctx.stroke();
       }
+      break;
     }
   }
+  ctx.restore(); // reset any shadowBlur / lineDash / lineWidth set by texture cases
 }
 
 // ── Background dispatcher ────────────────────────────────────
 function drawBackground(theme, cam, g) {
+  ctx.save();
+  ctx.shadowBlur = 0;
   switch(theme) {
-    case 'angkor': drawAngkorBg(cam,g); break;
-    case 'jungle': drawJungleBg(cam,g); break;
-    case 'city':   drawCityBg(cam,g);   break;
-    case 'ruins':  drawRuinsBg(cam,g);  break;
-    case 'night':  drawNightBg(cam,g);  break;
-    default:       drawDesertBg(cam,g); break;
+    case 'angkor':  drawAngkorBg(cam,g);  break;
+    case 'jungle':  drawJungleBg(cam,g);  break;
+    case 'city':    drawCityBg(cam,g);    break;
+    case 'ruins':   drawRuinsBg(cam,g);   break;
+    case 'night':   drawNightBg(cam,g);   break;
+    case 'rocky':   drawRockyBg(cam,g);   break;
+    case 'canyon':  drawCanyonBg(cam,g);  break;
+    case 'storm':   drawStormBg(cam,g);   break;
+    case 'abyss':   drawAbyssBg(cam,g);   break;
+    case 'volcano': drawVolcanoBg(cam,g); break;
+    case 'snow':    drawSnowBg(cam,g);    break;
+    case 'beach':   drawBeachBg(cam,g);   break;
+    case 'cave':    drawCaveBg(cam,g);    break;
+    case 'space':   drawSpaceBg(cam,g);   break;
+    default:        drawDesertBg(cam,g);  break;
   }
+  ctx.restore();
 }
 
 // ── Desert ───────────────────────────────────────────────────
@@ -1162,7 +1461,328 @@ function drawNightBg(cam, g) {
   });
 }
 
-// ── Bike (Sticker Outline & Updated Moto-X Style) ────────────────
+// ── Rocky Ridge — Grey Misty Mountains ───────────────────────
+function drawRockyBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#2a2e38'); sk.addColorStop(0.5, '#4a5060'); sk.addColorStop(1, '#6a6858');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  // Mist layer
+  ctx.fillStyle = 'rgba(200,210,220,0.12)'; ctx.fillRect(0, CH*0.3, CW, CH*0.4);
+  // Far mountains (light grey)
+  ctx.fillStyle = '#606878';
+  for (let i = 0; i < 8; i++) {
+    const mx = ((i * 95 - cam * 0.04) % (CW + 200) + CW + 200) % (CW + 200) - 100;
+    const mh = 80 + (i % 3) * 50;
+    ctx.beginPath(); ctx.moveTo(mx - 70, CH * 0.65); ctx.lineTo(mx, CH * 0.65 - mh); ctx.lineTo(mx + 70, CH * 0.65); ctx.fill();
+  }
+  // Near mountains (darker)
+  ctx.fillStyle = '#454a50';
+  for (let i = 0; i < 6; i++) {
+    const mx = ((i * 140 + 30 - cam * 0.09) % (CW + 300) + CW + 300) % (CW + 300) - 150;
+    const mh = 110 + (i % 2) * 70;
+    ctx.beginPath(); ctx.moveTo(mx - 100, CH * 0.7); ctx.lineTo(mx, CH * 0.7 - mh); ctx.lineTo(mx + 100, CH * 0.7); ctx.fill();
+    // Snow caps
+    ctx.fillStyle = 'rgba(220,230,240,0.8)';
+    ctx.beginPath(); ctx.moveTo(mx - 18, CH * 0.7 - mh + 30); ctx.lineTo(mx, CH * 0.7 - mh); ctx.lineTo(mx + 18, CH * 0.7 - mh + 30); ctx.fill();
+    ctx.fillStyle = '#454a50';
+  }
+  // Fog strips
+  ctx.fillStyle = 'rgba(180,190,200,0.1)';
+  ctx.fillRect(0, CH * 0.5, CW, 40);
+  ctx.fillRect(0, CH * 0.62, CW, 24);
+}
+
+// ── Canyon Drop — Red Rock Buttes ────────────────────────────
+function drawCanyonBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#4a1a08'); sk.addColorStop(0.4, '#8a2e10'); sk.addColorStop(0.75, '#c04820'); sk.addColorStop(1, '#e07030');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  // Sun
+  const sunX = 280 - (cam * 0.02) % CW;
+  ctx.fillStyle = 'rgba(255,200,80,0.9)';
+  ctx.beginPath(); ctx.arc(sunX, CH * 0.2, 28, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,160,40,0.25)';
+  ctx.beginPath(); ctx.arc(sunX, CH * 0.2, 55, 0, Math.PI * 2); ctx.fill();
+  // Canyon wall layers (back)
+  ctx.fillStyle = '#7a2808';
+  for (let i = 0; i < 5; i++) {
+    const bx = ((i * 160 - cam * 0.06) % (CW + 400) + CW + 400) % (CW + 400) - 200;
+    const bh = 100 + (i % 3) * 60;
+    ctx.fillRect(bx - 80, CH * 0.6 - bh, 160, bh + CH * 0.4);
+    // Strata lines
+    ctx.strokeStyle = 'rgba(180,80,20,0.4)'; ctx.lineWidth = 2;
+    for (let s = 0; s < 4; s++) {
+      ctx.beginPath(); ctx.moveTo(bx - 80, CH * 0.6 - bh + s * (bh / 4)); ctx.lineTo(bx + 80, CH * 0.6 - bh + s * (bh / 4)); ctx.stroke();
+    }
+  }
+  // Heat haze at horizon
+  ctx.fillStyle = 'rgba(255,120,40,0.08)'; ctx.fillRect(0, CH * 0.55, CW, 40);
+}
+
+// ── Insane Peak — Storm Sky ───────────────────────────────────
+function drawStormBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#080010'); sk.addColorStop(0.4, '#1a0530'); sk.addColorStop(0.8, '#300840'); sk.addColorStop(1, '#180520');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Rolling storm clouds
+  ctx.fillStyle = 'rgba(50,20,70,0.75)';
+  for (let i = 0; i < 7; i++) {
+    const cx = ((i * 110 - cam * 0.05) % (CW + 300) + CW + 300) % (CW + 300) - 150;
+    const cy = 40 + (i % 3) * 30;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 90, 38, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 50, cy - 15, 65, 28, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx - 40, cy + 5, 55, 22, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // Lightning bolt (flashes every 80 frames)
+  if (fc % 80 < 6) {
+    const lx = 200 + (fc * 17) % 400;
+    ctx.strokeStyle = 'rgba(200,150,255,0.9)'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#cc88ff'; ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.moveTo(lx, 30); ctx.lineTo(lx - 15, 100); ctx.lineTo(lx + 8, 140); ctx.lineTo(lx - 10, 220); ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  // Purple horizon glow
+  const hg = ctx.createLinearGradient(0, CH * 0.6, 0, CH);
+  hg.addColorStop(0, 'rgba(100,0,180,0.3)'); hg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = hg; ctx.fillRect(0, CH * 0.6, CW, CH * 0.4);
+}
+
+// ── Jungle Abyss — Pitch Black Deep Swamp ────────────────────
+function drawAbyssBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#000300'); sk.addColorStop(0.5, '#010a01'); sk.addColorStop(1, '#020e02');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Bioluminescent spore particles
+  for (let i = 0; i < 20; i++) {
+    const px = ((i * 43 + fc * 0.2) % (CW + 60) + CW + 60) % (CW + 60) - 30;
+    const py = CH * 0.2 + Math.sin(fc * 0.02 + i * 1.2) * 40 + i * 12;
+    const alpha = 0.3 + Math.sin(fc * 0.04 + i) * 0.2;
+    ctx.fillStyle = `rgba(50,255,80,${alpha})`;
+    ctx.shadowColor = '#40ff60'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  // Giant tree trunks
+  ctx.fillStyle = '#030c03';
+  for (let i = 0; i < 8; i++) {
+    const tx = ((i * 95 - cam * 0.07) % (CW + 200) + CW + 200) % (CW + 200) - 100;
+    ctx.fillRect(tx - 8, 0, 16, CH * 0.8);
+    // Root flare
+    ctx.beginPath(); ctx.moveTo(tx - 18, CH * 0.8); ctx.lineTo(tx - 8, CH * 0.6); ctx.lineTo(tx + 8, CH * 0.6); ctx.lineTo(tx + 18, CH * 0.8); ctx.fill();
+  }
+  // Murky water at base
+  const wg = ctx.createLinearGradient(0, CH * 0.7, 0, CH);
+  wg.addColorStop(0, 'rgba(0,20,5,0)'); wg.addColorStop(1, 'rgba(0,30,8,0.6)');
+  ctx.fillStyle = wg; ctx.fillRect(0, CH * 0.7, CW, CH * 0.3);
+}
+
+// ── Volcano Rush — Erupting Lava Field ───────────────────────
+function drawVolcanoBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#100200'); sk.addColorStop(0.3, '#350800'); sk.addColorStop(0.65, '#7a1200'); sk.addColorStop(1, '#c02000');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Volcano cone
+  const vx = 550 - (cam * 0.03) % 800;
+  ctx.fillStyle = '#1a0400';
+  ctx.beginPath(); ctx.moveTo(vx - 160, CH); ctx.lineTo(vx, CH * 0.15); ctx.lineTo(vx + 160, CH); ctx.fill();
+  // Crater glow
+  const cg = ctx.createRadialGradient(vx, CH * 0.15, 0, vx, CH * 0.15, 60);
+  cg.addColorStop(0, 'rgba(255,150,0,0.9)'); cg.addColorStop(0.4, 'rgba(255,60,0,0.5)'); cg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = cg; ctx.fillRect(vx - 60, CH * 0.08, 120, 60);
+  // Lava bombs (animated)
+  for (let i = 0; i < 5; i++) {
+    const t = (fc * 0.015 + i * 0.6) % 1;
+    const bx = vx + Math.sin(i * 1.7) * 80 * t;
+    const by = CH * 0.15 - t * 150 + t * t * 200;
+    ctx.fillStyle = `rgba(255,${Math.floor(100 + t * 100)},0,${1 - t})`;
+    ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(bx, by, 5 + (1 - t) * 5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  // Lava glow at ground level
+  const lg = ctx.createLinearGradient(0, CH * 0.6, 0, CH);
+  lg.addColorStop(0, 'rgba(255,80,0,0.2)'); lg.addColorStop(1, 'rgba(200,20,0,0.5)');
+  ctx.fillStyle = lg; ctx.fillRect(0, CH * 0.6, CW, CH * 0.4);
+  // Smoke plumes
+  ctx.fillStyle = 'rgba(60,40,30,0.3)';
+  for (let i = 0; i < 4; i++) {
+    const t = (fc * 0.008 + i * 0.4) % 1;
+    const sx2 = vx + (i - 2) * 20;
+    const sy = CH * 0.15 - t * 180;
+    const sr = 10 + t * 40;
+    ctx.beginPath(); ctx.arc(sx2, sy, sr, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ── Snowfall Summit — Frozen Alpine ──────────────────────────
+function drawSnowBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#060e20'); sk.addColorStop(0.35, '#0e2040'); sk.addColorStop(0.7, '#1a3060'); sk.addColorStop(1, '#203880');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Aurora borealis
+  for (let i = 0; i < 3; i++) {
+    const aOff = Math.sin(fc * 0.01 + i * 1.5) * 30;
+    const ag = ctx.createLinearGradient(0, 80 + i * 40 + aOff, 0, 140 + i * 40 + aOff);
+    const colors = ['rgba(40,255,140,', 'rgba(60,160,255,', 'rgba(120,80,255,'];
+    ag.addColorStop(0, colors[i] + '0)');
+    ag.addColorStop(0.5, colors[i] + '0.15)');
+    ag.addColorStop(1, colors[i] + '0)');
+    ctx.fillStyle = ag; ctx.fillRect(0, 80 + i * 40 + aOff, CW, 60);
+  }
+  // Stars
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  for (let i = 0; i < 50; i++) {
+    const sx2 = (i * 67 + 11) % CW, sy = (i * 41 + 7) % (CH * 0.45);
+    ctx.beginPath(); ctx.arc(sx2, sy, i % 5 === 0 ? 1.8 : 0.8, 0, Math.PI * 2); ctx.fill();
+  }
+  // Snowy mountains (light blue-white)
+  ctx.fillStyle = '#c8d8f0';
+  for (let i = 0; i < 6; i++) {
+    const mx = ((i * 130 - cam * 0.05) % (CW + 300) + CW + 300) % (CW + 300) - 150;
+    const mh = 90 + (i % 3) * 55;
+    ctx.beginPath(); ctx.moveTo(mx - 90, CH * 0.72); ctx.lineTo(mx, CH * 0.72 - mh); ctx.lineTo(mx + 90, CH * 0.72); ctx.fill();
+  }
+  // Falling snowflakes
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  for (let i = 0; i < 30; i++) {
+    const sx2 = ((i * 83 + fc * 0.4) % (CW + 20)) - 10;
+    const sy = ((i * 59 + fc * 0.8 + i * 0.3) % (CH + 20)) - 10;
+    ctx.beginPath(); ctx.arc(sx2, sy, i % 4 === 0 ? 2 : 1.2, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ── Coral Beach — Tropical Ocean Sunset ──────────────────────
+function drawBeachBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#001830'); sk.addColorStop(0.35, '#003858'); sk.addColorStop(0.6, '#006888'); sk.addColorStop(0.85, '#0090a8'); sk.addColorStop(1, '#00a8b8');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Sun/moon reflection
+  const sunX = CW * 0.65 - (cam * 0.01) % 200;
+  ctx.fillStyle = 'rgba(255,200,100,0.9)';
+  ctx.beginPath(); ctx.arc(sunX, CH * 0.22, 26, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,200,80,0.2)';
+  ctx.beginPath(); ctx.arc(sunX, CH * 0.22, 50, 0, Math.PI * 2); ctx.fill();
+  // Sun path reflection on water
+  const rg = ctx.createLinearGradient(sunX - 30, CH * 0.5, sunX + 30, CH);
+  rg.addColorStop(0, 'rgba(255,200,80,0.25)'); rg.addColorStop(1, 'rgba(255,200,80,0)');
+  ctx.fillStyle = rg; ctx.fillRect(sunX - 30, CH * 0.5, 60, CH * 0.5);
+  // Ocean waves
+  for (let w = 0; w < 4; w++) {
+    const wy = CH * (0.55 + w * 0.06);
+    const wOff = Math.sin(fc * 0.03 + w * 1.1) * 8;
+    ctx.strokeStyle = `rgba(100,220,240,${0.3 - w * 0.06})`; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let wx = -50; wx < CW + 50; wx += 40) {
+      const wx2 = wx - (cam * 0.08) % 40;
+      if (wx === -50) ctx.moveTo(wx2, wy + wOff);
+      else ctx.lineTo(wx2 + 20, wy + wOff + 6 * Math.sin(wx * 0.1 + fc * 0.04));
+    }
+    ctx.stroke();
+  }
+  // Palm trees
+  ctx.fillStyle = '#2a1a00';
+  for (let i = 0; i < 5; i++) {
+    const tx = ((i * 160 - cam * 0.06) % (CW + 300) + CW + 300) % (CW + 300) - 150;
+    const th = 70 + (i % 2) * 30;
+    // Trunk (curved)
+    ctx.lineWidth = 8; ctx.strokeStyle = '#3a2808'; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(tx, CH * 0.9); ctx.quadraticCurveTo(tx + 15, CH * 0.9 - th * 0.5, tx + 10, CH * 0.9 - th); ctx.stroke();
+    // Leaves
+    ctx.lineWidth = 3; ctx.strokeStyle = '#2a6010';
+    for (let l = 0; l < 6; l++) {
+      const la = (l / 6) * Math.PI * 2 - Math.PI / 2;
+      ctx.beginPath(); ctx.moveTo(tx + 10, CH * 0.9 - th); ctx.lineTo(tx + 10 + Math.cos(la) * 35, CH * 0.9 - th + Math.sin(la) * 20); ctx.stroke();
+    }
+  }
+}
+
+// ── Crystal Cave — Underground Cavern ────────────────────────
+function drawCaveBg(cam, g) {
+  const sk = ctx.createLinearGradient(0, 0, 0, CH);
+  sk.addColorStop(0, '#000005'); sk.addColorStop(0.5, '#05000f'); sk.addColorStop(1, '#0a0020');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Crystal formations hanging from ceiling
+  ctx.fillStyle = '#300060';
+  for (let i = 0; i < 14; i++) {
+    const cx = ((i * 54 - cam * 0.04) % (CW + 100) + CW + 100) % (CW + 100) - 50;
+    const ch = 30 + (i % 4) * 20;
+    const cw2 = 8 + (i % 3) * 5;
+    // Crystal spike
+    ctx.beginPath(); ctx.moveTo(cx - cw2, 0); ctx.lineTo(cx + cw2, 0); ctx.lineTo(cx, ch); ctx.closePath(); ctx.fill();
+    // Crystal glow
+    const alpha = 0.4 + Math.sin(fc * 0.03 + i) * 0.15;
+    ctx.fillStyle = `rgba(${100 + i % 3 * 50},${50 + i % 2 * 80},255,${alpha})`;
+    ctx.shadowColor = `rgba(${100 + i % 3 * 50},${50 + i % 2 * 80},255,0.8)`;
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.moveTo(cx - cw2 + 2, 0); ctx.lineTo(cx + cw2 - 2, 0); ctx.lineTo(cx, ch - 5); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#300060';
+  }
+  // Crystal clusters on side walls (left)
+  ctx.fillStyle = '#200040';
+  for (let i = 0; i < 5; i++) {
+    const cy = 80 + i * 60;
+    ctx.beginPath(); ctx.moveTo(0, cy - 15); ctx.lineTo(25, cy); ctx.lineTo(0, cy + 15); ctx.fill();
+    ctx.fillStyle = `rgba(180,80,255,0.4)`;
+    ctx.shadowColor = '#b050ff'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.moveTo(0, cy - 10); ctx.lineTo(18, cy); ctx.lineTo(0, cy + 10); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#200040';
+  }
+  // Ambient purple glow
+  const ag = ctx.createRadialGradient(CW * 0.5, CH * 0.7, 0, CW * 0.5, CH * 0.7, CW * 0.5);
+  ag.addColorStop(0, 'rgba(100,0,200,0.12)'); ag.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ag; ctx.fillRect(0, 0, CW, CH);
+}
+
+// ── Asteroid Belt — Deep Space ────────────────────────────────
+function drawSpaceBg(cam, g) {
+  ctx.fillStyle = '#000004'; ctx.fillRect(0, 0, CW, CH);
+  const fc = g ? g.frameCount : 0;
+  // Star field (3 layers of parallax)
+  for (let layer = 0; layer < 3; layer++) {
+    const speed = [0.01, 0.03, 0.06][layer];
+    const sizes = [0.6, 1.0, 1.5][layer];
+    ctx.fillStyle = `rgba(255,255,255,${[0.4, 0.65, 0.9][layer]})`;
+    for (let i = 0; i < 25; i++) {
+      const idx = layer * 25 + i;
+      const sx2 = ((idx * 71 + 13 - cam * speed) % (CW + 40) + CW + 40) % (CW + 40) - 20;
+      const sy = (idx * 47 + 9) % (CH * 0.85);
+      ctx.beginPath(); ctx.arc(sx2, sy, sizes, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // Nebula glow
+  const ng = ctx.createRadialGradient(CW * 0.3, CH * 0.3, 0, CW * 0.3, CH * 0.3, 160);
+  ng.addColorStop(0, 'rgba(80,0,150,0.12)'); ng.addColorStop(0.5, 'rgba(0,40,120,0.08)'); ng.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ng; ctx.fillRect(0, 0, CW, CH);
+  const ng2 = ctx.createRadialGradient(CW * 0.75, CH * 0.55, 0, CW * 0.75, CH * 0.55, 120);
+  ng2.addColorStop(0, 'rgba(0,100,180,0.1)'); ng2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ng2; ctx.fillRect(0, 0, CW, CH);
+  // Distant asteroids (bg)
+  ctx.fillStyle = 'rgba(60,60,70,0.6)';
+  for (let i = 0; i < 8; i++) {
+    const ax = ((i * 88 - cam * 0.025) % (CW + 150) + CW + 150) % (CW + 150) - 75;
+    const ay = 50 + (i % 4) * 55;
+    const ar = 15 + (i % 3) * 10;
+    ctx.beginPath(); ctx.ellipse(ax, ay, ar, ar * 0.65, i * 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+  // Shooting star (rare)
+  if (fc % 120 < 8) {
+    const t = (fc % 120) / 8;
+    const sx2 = 100 + t * 500;
+    const sy = 40 + t * 80;
+    ctx.strokeStyle = `rgba(255,255,255,${1 - t})`; ctx.lineWidth = 2;
+    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.moveTo(sx2, sy); ctx.lineTo(sx2 - 40 * t, sy - 16 * t); ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
+
 function drawBike(b, cam, frame) {
   // ── Custom skin dispatch ──
   const skin = SKINS.find(s => s.id === (b.skinId || 'classic')) || SKINS[0];
@@ -1170,14 +1790,41 @@ function drawBike(b, cam, frame) {
 
   const sx = b.x - cam;
   const crashed = b.crashT > 0;
-  const WR = 18;             // Wheel radius
-  const RX = -28, FX = 28;   // Wheelbase
+  const WR = 18;
+  const RX = -28, FX = 28;
   const sc = skin.colors;
+
+  // Suspension visual offset (body rises when compressed, springs back)
+  const suspOffset = -(b.suspension || 0);
 
   ctx.save();
   ctx.translate(sx, b.y);
   ctx.rotate(b.angle);
+  // Apply suspension: body lifts during compression
+  ctx.translate(0, suspOffset);
   const spin = frame * (gasDown ? 0.3 : 0.1);
+
+  // Wheelie / Stoppie HUD label
+  if (!crashed) {
+    ctx.save();
+    ctx.rotate(-b.angle); // un-rotate so text is always upright
+    if ((b.wheelieT || 0) > 20) {
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = 'bold 11px Arial Black';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+      ctx.fillText('WHEELIE!', 0, -80);
+      ctx.shadowBlur = 0;
+    } else if ((b.stoppieT || 0) > 20) {
+      ctx.fillStyle = '#00aaff';
+      ctx.font = 'bold 11px Arial Black';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+      ctx.fillText('STOPPIE!', 0, -80);
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
 
   if (!crashed) {
     ctx.shadowColor = sc.glow ? sc.glow : 'rgba(255, 255, 255, 1)';
@@ -1192,77 +1839,106 @@ function drawBike(b, cam, frame) {
 
   if (!crashed) { ctx.shadowColor = 'transparent'; }
 
-  // ─ 2. Exhaust under rear fender ─
-  ctx.strokeStyle = crashed ? '#777' : sc.exhaust; 
-  ctx.lineWidth = 8; ctx.lineCap = 'butt';
-  ctx.beginPath(); ctx.moveTo(RX-6, -6); ctx.lineTo(-10, -18); ctx.stroke();
-  ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(RX-8, -7); ctx.lineTo(RX-20, -5); ctx.stroke(); 
-  
-  // ─ 3. Swingarm ─
-  ctx.strokeStyle = crashed ? '#555' : sc.frame;
-  ctx.lineWidth = 5; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(RX, 0); ctx.lineTo(-6, -15); ctx.stroke();
-  
-  // ─ 4. Frame & Engine Block ─
-  ctx.fillStyle = crashed ? '#444' : sc.frame;
-  ctx.beginPath(); ctx.roundRect(-10, -18, 22, 14, 4); ctx.fill(); 
-  ctx.fillStyle = crashed ? '#333' : sc.secondary; 
-  ctx.beginPath(); ctx.arc(0, -12, 5, 0, Math.PI*2); ctx.fill();
+  // ─ 2. Exhaust (silver pipe under rear) ─
+  ctx.strokeStyle = crashed ? '#777' : sc.exhaust;
+  ctx.lineWidth = 7; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(RX-4, -4); ctx.lineTo(-8, -16); ctx.stroke();
+  ctx.lineWidth = 9; ctx.lineCap = 'butt';
+  ctx.beginPath(); ctx.moveTo(RX-8, -5); ctx.lineTo(RX-22, -4); ctx.stroke();
+  // Pipe end cap
+  ctx.fillStyle = crashed ? '#888' : '#aaa';
+  ctx.beginPath(); ctx.arc(RX-22, -4, 4, 0, Math.PI*2); ctx.fill();
 
-  // ─ 5. Main Body Plastics ─
-  ctx.fillStyle = crashed ? '#666' : sc.primary;
-  ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
-  // Tank & Shrouds
-  ctx.beginPath();
-  ctx.moveTo(18, -26); 
-  ctx.lineTo(-2, -26); 
-  ctx.lineTo(-8, -18); 
-  ctx.lineTo(8, -8); 
-  ctx.lineTo(20, -12); 
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  
-  // Rear fender & Side panel
-  ctx.beginPath();
-  ctx.moveTo(-6, -24);
-  ctx.lineTo(-26, -26); // Points up and back
-  ctx.lineTo(-32, -18); // Tip
-  ctx.lineTo(-12, -14); 
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  
-  // Accent lines (grey or neon)
-  ctx.strokeStyle = crashed ? '#555' : (sc.glow ? sc.glow : '#d0d0d0'); ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(0,-24); ctx.lineTo(-6,-16); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(8,-20); ctx.lineTo(16,-14); ctx.stroke();
-
-  // ─ 6. Front Fender ─
-  ctx.fillStyle = crashed ? '#666' : sc.primary;
-  ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(18,-24); ctx.bezierCurveTo(24,-24, 34,-12, 38,-4); ctx.lineTo(34, 0); ctx.bezierCurveTo(30,-8, 24,-18, 16,-20); ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // ─ 7. Seat ─
-  // Scrap skin has cracked seat logic
-  ctx.fillStyle = crashed ? '#444' : (sc.crack ? '#523a28' : '#333');
-  ctx.beginPath(); ctx.moveTo(10, -28); ctx.lineTo(-20, -28); ctx.lineTo(-24, -25); ctx.lineTo(6, -23); ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // ─ 8. Handlebars & Headtube ─
-  ctx.fillStyle = '#222';
-  ctx.beginPath(); ctx.roundRect(14,-32,8,8,2); ctx.fill();
-  ctx.strokeStyle = '#222'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(16, -28); ctx.lineTo(10, -42); ctx.lineTo(6, -42); ctx.stroke(); // Bar pointing back to rider
-  ctx.beginPath(); ctx.moveTo(10, -42); ctx.lineTo(26, -44); ctx.stroke(); // Throttle bar
-  // Hand grip (Green)
-  ctx.strokeStyle = crashed ? '#555' : '#66ff00'; ctx.lineWidth = 5;
-  ctx.beginPath(); ctx.moveTo(22,-43.5); ctx.lineTo(27,-44.5); ctx.stroke();
-
-  // ─ 9. Upper Fork Tubes (White/Silver/Custom) ─
-  ctx.strokeStyle = crashed ? '#888' : sc.rim;
+  // ─ 3. Swingarm (dark, thick) ─
+  ctx.strokeStyle = crashed ? '#444' : sc.frame;
   ctx.lineWidth = 6; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(18,-28); ctx.lineTo(FX,-5); ctx.stroke();
-  
+  ctx.beginPath(); ctx.moveTo(RX, 0); ctx.lineTo(-5, -16); ctx.stroke();
+
+  // ─ 4. Frame & Engine Block ─
+  ctx.fillStyle = crashed ? '#333' : sc.frame;
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+  // Main frame triangle
+  ctx.beginPath(); ctx.moveTo(-5,-16); ctx.lineTo(20,-16); ctx.lineTo(12,-28); ctx.lineTo(-8,-28); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Engine block
+  ctx.fillStyle = crashed ? '#2a2a2a' : '#1a1a1a';
+  ctx.beginPath(); ctx.roundRect(-8, -22, 20, 12, 3); ctx.fill(); ctx.stroke();
+  // Engine detail
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.roundRect(-5,-20,6,8,2); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(3,-20,6,8,2); ctx.fill();
+
+  // ─ 5. Main Body Plastics (Orange KTM style) ─
+  ctx.fillStyle = crashed ? '#555' : sc.primary;
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  // Tank (wider, more realistic)
+  ctx.beginPath();
+  ctx.moveTo(20, -28);
+  ctx.lineTo(-4,  -28);
+  ctx.lineTo(-10, -18);
+  ctx.lineTo(10,  -10);
+  ctx.lineTo(22,  -14);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // White graphic stripe on tank
+  ctx.fillStyle = crashed ? '#888' : '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(14, -26); ctx.lineTo(2, -26); ctx.lineTo(0, -22); ctx.lineTo(12, -22);
+  ctx.closePath(); ctx.fill();
+
+  // Rear subframe & side panel
+  ctx.fillStyle = crashed ? '#555' : sc.primary;
+  ctx.beginPath();
+  ctx.moveTo(-4, -26);
+  ctx.lineTo(-28, -28);
+  ctx.lineTo(-34, -20);
+  ctx.lineTo(-14, -16);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // White stripe on rear panel
+  ctx.fillStyle = crashed ? '#888' : '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(-8,-26); ctx.lineTo(-22,-27); ctx.lineTo(-24,-23); ctx.lineTo(-10,-22);
+  ctx.closePath(); ctx.fill();
+
+  // ─ 6. Front Fender (orange) ─
+  ctx.fillStyle = crashed ? '#555' : sc.primary;
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(20,-26); ctx.bezierCurveTo(26,-26,36,-12,40,-3);
+  ctx.lineTo(36,-1); ctx.bezierCurveTo(32,-9,26,-20,18,-22);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ─ 7. Seat (black with seam) ─
+  ctx.fillStyle = crashed ? '#333' : '#1a1a1a';
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(12,-30); ctx.lineTo(-22,-30); ctx.lineTo(-26,-26); ctx.lineTo(8,-26); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Seat seam (white stitching)
+  ctx.strokeStyle = crashed ? '#555' : '#555';
+  ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(10,-28); ctx.lineTo(-21,-28); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ─ 8. Handlebars ─
+  ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(15,-34,8,8,2); ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(17,-30); ctx.lineTo(11,-44); ctx.lineTo(7,-44); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(11,-44); ctx.lineTo(27,-46); ctx.stroke();
+  // Green grip
+  ctx.strokeStyle = crashed ? '#555' : '#44dd00'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(23,-45); ctx.lineTo(28,-46); ctx.stroke();
+
+  // ─ 9. Fork Tubes (white/chrome) ─
+  ctx.strokeStyle = crashed ? '#888' : '#e0e0e0';
+  ctx.lineWidth = 7; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(19,-28); ctx.lineTo(FX,-4); ctx.stroke();
+  ctx.strokeStyle = crashed ? '#666' : '#aaa';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(21,-28); ctx.lineTo(FX+2,-4); ctx.stroke();
+
   // ─ 10. Front wheel ─
-  // Scrap metal mismatched wheel
   const frontSc = sc.crack ? { ...sc, rim: '#c0c0c0', spoke: '#333'} : sc;
   drawWheel(FX, 0, WR, spin, crashed, frontSc);
 
@@ -1316,107 +1992,103 @@ function drawWheel(ox, oy, r, spin, crashed, sc = {rim:'#ddd',spoke:'#333'}) {
 }
 
 function drawRider(frame) {
-  const bob = Math.sin(frame * 0.2) * (gasDown ? 1.5 : 0.5);
+  const bob = Math.sin(frame * 0.18) * (gasDown ? 1.8 : 0.6);
+  const lean = gasDown ? -0.08 : (brakeDown ? 0.06 : 0);
+  ctx.save();
+  ctx.rotate(lean);
 
-  const skin = '#ffb080';
-  const suitOrange = '#ee4411';
-  const suitHighlight = '#ff6c22';
-  const brightGreen = '#66ff00';
-  const strokeColor = '#111';
+  // Boot (single - 2D side view, one leg visible)
+  ctx.fillStyle = '#e05010'; ctx.strokeStyle = '#1a0800'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(-2, -7, 9, 13, 3); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(3, 5, 8, 3.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#ff7030';
+  ctx.beginPath(); ctx.roundRect(-1, -6, 7, 4, 2); ctx.fill();
 
-  const wStrokeHelper = () => {
-     ctx.shadowColor = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 4;
-     ctx.stroke();
-     ctx.shadowColor = 'transparent';
-  };
+  // Leg (single - Blue denim, side view)
+  ctx.strokeStyle = '#2255aa'; ctx.lineWidth = 11; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-8, -26+bob); ctx.lineTo(-2, -8+bob); ctx.stroke();
+  ctx.strokeStyle = '#1a3d80'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-8, -26+bob); ctx.lineTo(-2, -8+bob); ctx.stroke();
 
-  // ── Boots (Bright Green) ──
-  ctx.fillStyle = brightGreen; ctx.strokeStyle = strokeColor; ctx.lineWidth = 1.5;
-  // Left boot (back)
-  ctx.beginPath(); ctx.roundRect(-10, -8, 8, 14, 3); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(-4, 4, 8, 4, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-  // Right boot (front)
-  ctx.beginPath(); ctx.roundRect(0, -9, 8, 14, 3); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(8, 3, 9, 4, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // Knee pad (single)
+  ctx.fillStyle = '#334455'; ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(-5, -17+bob, 5, 6, 0.3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-  // ── Knee Pads (Bright Green) ──
-  ctx.fillStyle = brightGreen;
-  ctx.beginPath(); ctx.ellipse(4, -14+bob, 6, 7, 0.4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(-4, -12+bob, 5.5, 6, 0.4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-  // ── Legs (Orange Pants, sitting upright) ──
-  ctx.strokeStyle = suitOrange; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // Left leg
-  ctx.beginPath(); ctx.moveTo(-16,-26+bob); ctx.lineTo(-8,-14+bob); ctx.stroke();
-  // Right leg
-  ctx.beginPath(); ctx.moveTo(-12,-28+bob); ctx.lineTo(2,-16+bob); ctx.stroke();
-
-  // Leg outlines
-  ctx.strokeStyle = strokeColor; ctx.lineWidth = 1.5;
-  wStrokeHelper();
-
-  // ── Body / jacket (Orange, sitting upright) ──
-  ctx.fillStyle = suitOrange; ctx.strokeStyle = strokeColor; ctx.lineWidth = 1.5;
-  ctx.beginPath(); 
-  ctx.moveTo(-16, -26+bob); // Bottom back
-  ctx.lineTo(-4, -26+bob);  // Bottom front
-  ctx.lineTo(-2, -45+bob);  // Chest
-  ctx.lineTo(-16, -45+bob);   // Upper back
-  ctx.closePath(); 
-  ctx.fill(); ctx.stroke();
-  
-  // Grey detail lines on suit
-  ctx.strokeStyle = '#cccccc'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(-14,-40+bob); ctx.lineTo(-2,-40+bob); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-14,-34+bob); ctx.lineTo(-4,-34+bob); ctx.stroke();
-
-  // ── Arms (Orange) extended forward to handlebars ──
-  ctx.strokeStyle = suitOrange; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // Left Arm (behind)
-  ctx.beginPath(); ctx.moveTo(-8,-42+bob); ctx.lineTo(5,-38+bob); ctx.lineTo(20,-42); ctx.stroke(); // Left hand on left bar
-  // Right Arm (front)
-  ctx.beginPath(); ctx.moveTo(-2,-42+bob); ctx.lineTo(12,-38+bob); ctx.lineTo(24,-43); ctx.stroke(); // Right hand on throttle
-
-  ctx.strokeStyle = strokeColor; ctx.lineWidth = 1.5;
-  wStrokeHelper();
-
-  // ── Hands (Green/Grey Gloves) ──
-  ctx.fillStyle = '#66ff00';
-  ctx.beginPath(); ctx.arc(20,-42, 4.5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(25,-43, 4.5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-
-  // ── Helmet (Orange shell, green strap, blue visor) ──
-  // Helmet Base / Shell
-  ctx.fillStyle = suitOrange;
+  // Jacket (Dark grey)
+  ctx.fillStyle = '#2a2a2a'; ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(-8, -55+bob, 13, -Math.PI*0.8, Math.PI*0.3); // Back and top
-  ctx.lineTo(2, -49+bob); // Chin extension
-  ctx.lineTo(-4, -45+bob); // Bottom
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
+  ctx.moveTo(-18,-24+bob); ctx.lineTo(-5,-24+bob); ctx.lineTo(-3,-44+bob); ctx.lineTo(-18,-44+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#383838';
+  ctx.beginPath(); ctx.roundRect(-16,-42+bob,5,10,2); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(-8,-42+bob,4,10,2); ctx.fill();
 
-  // Green Goggles Strap around back of helmet
-  ctx.strokeStyle = brightGreen; ctx.lineWidth = 3.5;
-  ctx.beginPath(); ctx.moveTo(-20, -56+bob); ctx.lineTo(-12, -54+bob); ctx.stroke();
-  
-  // Orange Sun Peak (Visor shade)
-  ctx.fillStyle = '#ff6c22';
-  ctx.beginPath(); ctx.moveTo(-10, -66+bob); ctx.lineTo(8, -65+bob); ctx.lineTo(4, -62+bob); ctx.lineTo(-6, -63+bob); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Orange chest stripe
+  ctx.fillStyle = '#e85010'; ctx.strokeStyle = '#1a0800'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(-17,-44+bob,13,5,2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(-6,-44+bob,3,14,2); ctx.fill(); ctx.stroke();
 
-  // ── Blue Tinted Goggles / Visor ──
-  ctx.fillStyle = '#33aaff'; // Bright cyan/blue
+  // Number plate
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.roundRect(-14,-39+bob,8,6,1); ctx.fill();
+  ctx.fillStyle = '#111'; ctx.font = 'bold 5px Arial';
+  ctx.fillText('18',-13,-34+bob);
+
+  // Arms
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-12,-41+bob); ctx.lineTo(4,-37+bob); ctx.lineTo(18,-41); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-7,-42+bob); ctx.lineTo(10,-38+bob); ctx.lineTo(22,-43); ctx.stroke();
+
+  // Gloves (bright green)
+  ctx.fillStyle = '#44dd00'; ctx.strokeStyle = '#1a4400'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(18,-41,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(23,-43,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  // Neck
+  ctx.fillStyle = '#e8c090';
+  ctx.beginPath(); ctx.roundRect(-11,-48+bob,6,6,2); ctx.fill();
+
+  // Helmet shell (white)
+  ctx.fillStyle = '#f0f0f0'; ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(3, -56+bob); // Top right corner
-  ctx.lineTo(-12, -55+bob); // Top left (strap connects here)
-  ctx.lineTo(-10, -48+bob); // Bottom left (chin guard connection)
-  ctx.lineTo(2, -51+bob); // Bottom right
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
+  ctx.arc(-9,-57+bob,16,-Math.PI*0.85,Math.PI*0.3);
+  ctx.lineTo(2,-48+bob); ctx.lineTo(-5,-44+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Visor peak (orange)
+  ctx.fillStyle = '#e85010'; ctx.strokeStyle = '#1a0800'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-22,-63+bob); ctx.lineTo(4,-62+bob); ctx.lineTo(0,-58+bob); ctx.lineTo(-18,-59+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Goggle strap
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.roundRect(-24,-61+bob,4,6,1); ctx.fill();
+
+  // Face opening
+  ctx.fillStyle = '#222'; ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-4,-58+bob); ctx.lineTo(2,-54+bob); ctx.lineTo(-1,-47+bob); ctx.lineTo(-8,-46+bob);
+  ctx.closePath(); ctx.fill();
+
+  // Goggles (blue)
+  ctx.fillStyle = '#2288ff'; ctx.strokeStyle = '#0044aa'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-2,-60+bob); ctx.lineTo(-18,-59+bob); ctx.lineTo(-15,-52+bob); ctx.lineTo(0,-53+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
 
   // Visor glare
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.beginPath(); ctx.ellipse(-2, -53+bob, 4, 1.5, 0.2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.ellipse(-9,-57+bob,5,2,0.1,0,Math.PI*2); ctx.fill();
+
+  // Helmet highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath(); ctx.ellipse(-14,-65+bob,6,4,-0.5,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
 }
+
 
 // =============================================================
 //  Bootstrap — runs on page load
@@ -1714,7 +2386,7 @@ function drawBikeBMW(b, cam, frame) {
 
 const SKINS = [
   { id: 'classic',  name: 'Classic Blaze',    reqStars: 0,
-    colors: { primary: '#ee4411', secondary: '#e04810', frame: '#aaaaaa', rim: '#dddddd', spoke: '#333', exhaust: '#e5e5e5', glow: null } },
+    colors: { primary: '#e84400', secondary: '#ff6622', frame: '#222222', rim: '#e8e8e8', spoke: '#444', exhaust: '#cccccc', glow: null } },
   { id: 'neon',     name: 'Neon Stealth',      reqStars: 3,
     colors: { primary: '#111111', secondary: '#222222', frame: '#050505', rim: '#00ffff', spoke: '#00ccff', exhaust: '#111', glow: '#00ffff' } },
   { id: 'scrap',    name: 'Scrap Metal',        reqStars: 6,

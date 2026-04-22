@@ -19,6 +19,11 @@ const LevelManager = {
     LEVELS.forEach((lvl, i) => {
       if (!this._data[lvl.id]) this._data[lvl.id] = { unlocked: i === 0, stars: 0 };
     });
+    // migrate: switch 'classic' to 'stylized' (GIF bike) for returning players
+    if (!this._data.equippedSkin || this._data.equippedSkin === 'classic') {
+      this._data.equippedSkin = 'stylized';
+      this._save();
+    }
     return this;
   },
 
@@ -39,7 +44,7 @@ const LevelManager = {
     return LEVELS.reduce((sum, lvl) => sum + this.getStars(lvl.id), 0);
   },
 
-  getEquippedSkin() { return this._data.equippedSkin || 'classic'; },
+  getEquippedSkin() { return this._data.equippedSkin || 'stylized'; },
   setEquippedSkin(skinId) { 
     this._data.equippedSkin = skinId; 
     this._save(); 
