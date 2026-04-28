@@ -5,10 +5,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Moto Trials — Physics Motorcycle Game</title>
-  <meta name="description" content="MOTO Trials: A mobile physics motorcycle game with 10 challenging tracks, 10 bike skins, and procedural audio. Built by Antigravity Games." />
+  <meta name="description" content="MOTO Trials: A mobile physics motorcycle game with 20 challenging tracks, 19 bike skins, and procedural audio. Built by Antigravity Games." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 
 <body>
@@ -39,16 +39,16 @@
       <div class="lp-hero-content">
         <div class="lp-eyebrow">Physics Motorcycle Game</div>
         <h1 class="lp-logo">MOTO<br><span>Trials</span></h1>
-        <p class="lp-tagline">10 tracks. 10 skins. Pure adrenaline.<br>Can you handle the Insane Peak?</p>
+        <p class="lp-tagline">20 tracks. 20 skins. Pure adrenaline.<br>Can you handle the Insane Peak?</p>
 
         <div class="lp-stats">
           <div class="lp-stat">
-            <div class="lp-stat-num">15</div>
+            <div class="lp-stat-num">20</div>
             <div class="lp-stat-label">Levels</div>
           </div>
           <div class="lp-stat-div"></div>
           <div class="lp-stat">
-            <div class="lp-stat-num">10</div>
+            <div class="lp-stat-num">20</div>
             <div class="lp-stat-label">Bike Skins</div>
           </div>
           <div class="lp-stat-div"></div>
@@ -107,7 +107,7 @@
       <div class="lp-feat-card">
         <div class="lp-feat-icon">🎨</div>
         <div class="lp-feat-title">Skin Garage</div>
-        <div class="lp-feat-body">Unlock 10 unique bike skins — from Neon Stealth to BMW S1000RR — by collecting stars across all levels.</div>
+        <div class="lp-feat-body">Unlock 20 unique bike skins — from Vintage Classic to Ghost Rider — by collecting stars across all levels.</div>
       </div>
     </div>
 
@@ -287,7 +287,7 @@
                 <div class="lp-char-icon">🎨</div>
                 <div>
                   <div class="lp-char-label">Skins</div>
-                  <div class="lp-char-val">10 bike skins: Vintage · Cruiser · Pixel · Neon · Scrap · Gold · Bimota · BMW · Arctic</div>
+                  <div class="lp-char-val">20 skins: Vintage · Cruiser · Pixel · Neon · Scrap · Gold · Bimota · BMW · Arctic · Inferno · Shadow · Toxic Slime · Rose Gold · Supermoto · Chopper · Enduro · MX Racer · Electric ⚡ · Ghost Rider 💀🔥</div>
                 </div>
               </div>
             </div>
@@ -405,8 +405,8 @@
     <!-- Mini stats strip -->
     <div class="ls-stats-strip">
       <div class="ls-stat-pill">🏆 <span id="ls-best-dist">—</span></div>
-      <div class="ls-stat-pill">10 Levels</div>
-      <div class="ls-stat-pill">11 Skins</div>
+      <div class="ls-stat-pill">20 Levels</div>
+      <div class="ls-stat-pill">20 Skins</div>
     </div>
 
     <!-- Bottom action buttons -->
@@ -469,21 +469,33 @@
            style="position:absolute;display:none;pointer-events:none;transform-origin:50% 82%;image-rendering:pixelated;"
            alt="bike">
 
-      <!-- HUD: distance & pause -->
+      <!-- HUD: distance, timer, pause, sound -->
       <div id="hud">
         <div class="hud-pill" id="distLabel">0 m</div>
-        <div id="pauseBtn" onclick="togglePause()">
+        <div class="hud-pill" id="timerLabel" style="color:#ffd700;">⏱ 0:00.0</div>
+        <button id="soundToggleBtn" onclick="toggleSound()" class="hud-sound-btn">🔊</button>
+        <div id="pauseBtn" onclick="togglePause()" style="pointer-events:auto;cursor:pointer;">
           <div class="pause-icon">
             <div class="pause-bar"></div>
             <div class="pause-bar"></div>
           </div>
         </div>
       </div>
+      <!-- Level name toast (#8) -->
+      <div id="levelToast" style="display:none;position:absolute;top:54px;left:50%;transform:translateX(-50%);background:rgba(255,200,0,0.92);color:#111;font-weight:700;padding:6px 18px;border-radius:20px;font-size:14px;z-index:40;pointer-events:none;"></div>
+      <!-- Combo meter (#14) -->
+      <div id="comboMeter" style="display:none;position:absolute;top:88px;left:50%;transform:translateX(-50%);background:rgba(255,60,0,0.9);color:#fff;font-weight:800;padding:5px 16px;border-radius:16px;font-size:13px;z-index:40;pointer-events:none;"></div>
 
-      <!-- Stat bar: speed & stars -->
+      <!-- Stat bar: speed, stars, nitro -->
       <div id="statBar">
         <div class="stat-chip" id="speedLabel">Speed: 0</div>
         <div class="stat-chip" id="starLabel">⭐ 0</div>
+        <div class="stat-chip" style="display:flex;align-items:center;gap:4px;">
+          <span id="nitroIcon">⚡</span>
+          <div style="width:60px;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden;">
+            <div id="nitroFill" style="height:100%;width:100%;background:linear-gradient(90deg,#00ccff,#a855f7);border-radius:4px;transition:width 0.1s;"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Touch controls -->
@@ -491,6 +503,7 @@
         <div class="ctrl-zone" id="brakeZone">
           <div class="ctrl-btn"><span class="ctrl-label">◀</span></div>
         </div>
+        <button id="nitroBtn" style="background:rgba(255,255,255,0.12);border:2px solid rgba(0,220,255,0.6);border-radius:50%;width:56px;height:56px;color:#00dcff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:20;">⚡</button>
         <div class="ctrl-zone" id="gasZone">
           <div class="ctrl-btn"><span class="ctrl-label">▶</span></div>
         </div>
@@ -505,15 +518,16 @@
         <div class="ov-btns">
           <button class="ov-btn secondary" onclick="showLevelSelect()">☰ Menu</button>
           <button class="ov-btn primary" onclick="startGame()">↺ Try Again</button>
+          <button class="ov-btn primary" id="nextLevelBtn" onclick="nextLevel()" style="display:none;background:linear-gradient(135deg,#4ade80,#22c55e);">Next Level ▶</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Scripts — order matters -->
-  <script src="levels.js"></script>
-  <script src="level-manager.js"></script>
-  <script src="game.js"></script>
+  <script src="levels.js?v=5"></script>
+  <script src="level-manager.js?v=5"></script>
+  <script src="game.js?v=11"></script>
 
 </body>
 

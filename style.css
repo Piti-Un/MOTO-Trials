@@ -1633,13 +1633,13 @@ body {
 #wrap {
   background: #e8c890;
   overflow: hidden;
-  width: 100%;          /* fill full width */
-  max-width: 900px;     /* generous cap for very wide screens */
+  width: 100vw;
+  height: 100dvh;
   font-family: inherit;
   position: relative;
 }
 
-#gameCanvas { display: block; width: 100%; touch-action: none; }
+#gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
 /* ── HUD ── */
 #hud {
@@ -1661,7 +1661,7 @@ body {
 
 /* ── Stat bar ── */
 #statBar {
-  position: absolute; bottom: 100px; left: 0; right: 0;
+  position: absolute; bottom: 68px; left: 0; right: 0;
   display: flex; justify-content: center; gap: 20px; pointer-events: none;
 }
 .stat-chip {
@@ -1763,3 +1763,212 @@ body {
 .ov-btn.primary   { background: #c84010; color: #fff; border: 2px solid #ff6030; }
 .ov-btn.secondary { background: rgba(255,255,255,0.1); color: #f5e6c8;
                     border: 2px solid rgba(255,255,255,0.2); }
+.ov-btn.next {
+  background: linear-gradient(135deg, #16aa36, #0e8828);
+  color: #fff;
+  border: 2px solid #2edf55;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 16px rgba(20,180,60,0.45);
+  animation: nextBtnPop 0.5s ease 0.3s both;
+}
+.ov-btn.next:hover { box-shadow: 0 4px 24px rgba(20,220,70,0.65); }
+@keyframes nextBtnPop {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ============================================================
+   NEW FEATURE STYLES (Updates #1–#15)
+   ============================================================ */
+
+/* ── #1 Timer label ── */
+.hud-timer {
+  background: rgba(0,0,0,0.45);
+  font-weight: 700;
+  color: #ffd700;
+  border: 1px solid rgba(255,215,0,0.3);
+}
+.hud-timer.hud-timer-best {
+  color: #4ade80;
+  border-color: rgba(74,222,128,0.4);
+}
+
+/* ── #15 Sound toggle button ── */
+.hud-sound-btn {
+  pointer-events: all;
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  user-select: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.hud-sound-btn:hover  { background: rgba(255,255,255,0.35); }
+.hud-sound-btn:active { transform: scale(0.9); }
+.hud-sound-btn.muted  { opacity: 0.55; }
+
+/* ── #3 Nitro chip + bar ── */
+.nitro-chip {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px !important;
+}
+.nitro-track {
+  display: inline-block;
+  width: 52px; height: 6px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.nitro-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #00dcff, #a855f7);
+  border-radius: 4px;
+  transition: width 0.08s linear;
+  box-shadow: 0 0 6px rgba(0,220,255,0.7);
+}
+#nitroIcon { font-size: 14px; }
+
+/* Nitro touch button ── */
+.ctrl-nitro {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex: none !important;
+  padding: 0 !important;
+  width: 70px; height: 70px;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 201;
+}
+.ctrl-btn-nitro {
+  width: 70px !important;
+  height: 70px !important;
+  background: rgba(0,180,255,0.22) !important;
+  border-color: rgba(0,220,255,0.7) !important;
+  box-shadow: 0 0 16px rgba(0,220,255,0.4), 0 4px 16px rgba(0,0,0,0.4) !important;
+}
+.ctrl-btn-nitro .ctrl-label { font-size: 28px !important; }
+.ctrl-nitro:active .ctrl-btn-nitro {
+  background: rgba(0,180,255,0.5) !important;
+  box-shadow: 0 0 28px rgba(0,220,255,0.7) !important;
+}
+
+/* ── #8 Level Name Toast ── */
+#levelToast {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(0,0,0,0.75);
+  border: 1.5px solid rgba(255,215,0,0.5);
+  border-radius: 40px;
+  padding: 10px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255,215,0,0.6);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 190;
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+#levelToast.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── #14 Combo Meter ── */
+#comboMeter {
+  position: absolute;
+  top: 56px;
+  right: 14px;
+  background: rgba(0,0,0,0.6);
+  border: 1.5px solid rgba(255,170,0,0.6);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffaa00;
+  text-shadow: 0 0 8px rgba(255,170,0,0.7);
+  pointer-events: none;
+  z-index: 190;
+  animation: comboIn 0.3s ease;
+}
+@keyframes comboIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── #2 Overlay best distance row ── */
+.ov-best {
+  font-size: 12px;
+  color: #4ade80;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ── #6 Level card shine sweep ── */
+.ls-card:not(.locked)::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 60%; height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255,255,255,0.13) 50%,
+    transparent 70%
+  );
+  transform: skewX(-15deg);
+  transition: none;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.ls-card:not(.locked):hover::after {
+  animation: cardShine 0.5s ease forwards;
+}
+@keyframes cardShine {
+  0%   { left: -80%; }
+  100% { left: 140%; }
+}
+
+/* ── #13 Daily Challenge Badge ── */
+.daily-badge {
+  position: absolute;
+  top: 70px;
+  right: 20px;
+  z-index: 3;
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  border-radius: 14px;
+  padding: 8px 16px;
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 12px rgba(255,140,0,0.5), 0 2px 0 #b06000;
+  cursor: pointer;
+  animation: dailyPulse 2s ease-in-out infinite;
+  transition: transform 0.1s;
+}
+.daily-badge:hover  { transform: scale(1.05); }
+.daily-badge:active { transform: scale(0.97); }
+.daily-badge.done {
+  background: linear-gradient(135deg, #4ade80, #16a34a);
+  box-shadow: 0 4px 12px rgba(74,222,128,0.4), 0 2px 0 #166534;
+  animation: none;
+}
+@keyframes dailyPulse {
+  0%,100% { box-shadow: 0 4px 12px rgba(255,140,0,0.5), 0 2px 0 #b06000; }
+  50%      { box-shadow: 0 4px 20px rgba(255,200,0,0.8), 0 2px 0 #b06000; }
+}

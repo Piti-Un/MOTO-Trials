@@ -15,9 +15,10 @@ const LevelManager = {
       this._data = raw ? JSON.parse(raw) : null;
     } catch (_) { this._data = null; }
     if (!this._data) this._data = this._defaults();
-    // ensure any new levels are present
+    // ensure any new levels are present AND all are unlocked
     LEVELS.forEach((lvl, i) => {
-      if (!this._data[lvl.id]) this._data[lvl.id] = { unlocked: i === 0, stars: 0 };
+      if (!this._data[lvl.id]) this._data[lvl.id] = { unlocked: true, stars: 0 };
+      else this._data[lvl.id].unlocked = true; // unlock all for existing saves
     });
     // migrate: switch 'classic' to 'stylized' (GIF bike) for returning players
     if (!this._data.equippedSkin || this._data.equippedSkin === 'classic') {
@@ -29,7 +30,7 @@ const LevelManager = {
 
   _defaults() {
     const d = {};
-    LEVELS.forEach((lvl, i) => { d[lvl.id] = { unlocked: i === 0, stars: 0 }; });
+    LEVELS.forEach((lvl, i) => { d[lvl.id] = { unlocked: true, stars: 0 }; });
     return d;
   },
 
